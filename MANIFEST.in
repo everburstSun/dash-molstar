@@ -1,0 +1,11 @@
+include dash_molstar/dash_molstar.min.js
+include dash_molstar/dash_molstar.min.js.map
+include dash_molstar/async-*.js
+include dash_molstar/async-*.js.map
+include dash_molstar/*-shared.js
+include dash_molstar/*-shared.js.map
+include dash_molstar/metadata.json
+include dash_molstar/package-info.json
+include README.md
+include LICENSE
+include package.json
