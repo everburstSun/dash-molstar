@@ -30,6 +30,12 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 ```
 
+Clone the repository to your local directory and run the following command to see the demo:
+
+```
+python usage.py
+```
+
 ## Parameters
 
 Parameters for `MolstarViewer` include `id`, `data`, `focus`, `layout`, `selection` and `style`.
