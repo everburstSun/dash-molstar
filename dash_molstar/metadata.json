@@ -1,0 +1,143 @@
+{
+  "src/lib/components/MolstarViewer.react.js": {
+    "description": "The Molstar viewer component for dash",
+    "displayName": "MolstarViewer",
+    "methods": [
+      {
+        "name": "handleDataChange",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "data",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "handleComponentChange",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "component",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "handleSelectionChange",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "selection",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "handleFocusChange",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "focus",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "loadData",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "data",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "loadShape",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "data",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "addComponent",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "component",
+            "type": null
+          }
+        ],
+        "returns": null
+      }
+    ],
+    "props": {
+      "id": {
+        "type": {
+          "name": "string"
+        },
+        "required": false,
+        "description": "The ID used to identify this component in Dash callbacks."
+      },
+      "style": {
+        "type": {
+          "name": "object"
+        },
+        "required": false,
+        "description": "The HTML property `style` to control the appearence of the container of molstar viewer."
+      },
+      "data": {
+        "type": {
+          "name": "any"
+        },
+        "required": false,
+        "description": "Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.\nThe data can be generated with python method `parse_molecule`."
+      },
+      "layout": {
+        "type": {
+          "name": "object"
+        },
+        "required": false,
+        "description": "The layout of the molstar viewer. Determining what controls to be displayed. \n\nThe layout is not allowed to be changed once the component has been initialized."
+      },
+      "selection": {
+        "type": {
+          "name": "object"
+        },
+        "required": false,
+        "description": "The structure region to be selected in the molstar viewer."
+      },
+      "focus": {
+        "type": {
+          "name": "object"
+        },
+        "required": false,
+        "description": "The structure region to let the camera focus on in the molstar viewer."
+      },
+      "setProps": {
+        "type": {
+          "name": "func"
+        },
+        "required": false,
+        "description": "Dash-assigned callback that should be called to report property changes\nto Dash, to make them available for callbacks."
+      }
+    }
+  }
+}

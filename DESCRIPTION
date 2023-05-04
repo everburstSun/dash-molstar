@@ -1,0 +1,13 @@
+Package: dashMolstar
+Title: The molstar plugin for plotly dash framework
+Version: 0.1.0
+Description: The molstar plugin for plotly dash framework
+Depends: R (>= 3.0.2)
+Imports: 
+Suggests: 
+License: LGPL-2.1 + file LICENSE
+URL: https://github.com/SSSSSimon/dash-molstar
+BugReports: https://github.com/SSSSSimon/dash-molstar/issues
+Encoding: UTF-8
+LazyData: true
+KeepSource: true
