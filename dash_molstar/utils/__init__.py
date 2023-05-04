@@ -1,1 +1,1 @@
-from . import molstar_parser
+from . import molstar_helper

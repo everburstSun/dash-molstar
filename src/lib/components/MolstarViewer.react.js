@@ -39,7 +39,6 @@ export default class MolstarViewer extends Component {
             data: props.data,
             layout: defaultLayout,
             style: defaultStyle,
-            component: props.component,
             selection: props.selection,
             focus: props.focus
         };
@@ -63,21 +62,70 @@ export default class MolstarViewer extends Component {
         this.setState({data: data});
     }
     handleComponentChange(component) {
-        
-        this.setState({component: component});
+        if (component) {
+            if (Array.isArray(component)) {
+                component.forEach((obj) => {
+                    this.addComponent(obj);
+                });
+            } else if (typeof component === "object") {
+                this.addComponent(component);
+            }
+        }
     }
     handleSelectionChange(selection) {
-        
+        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+        if (model_index >= 0) {
+            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            const targets = [];
+            if (selection.targets) {
+                for (let target of selection.targets) {
+                    const newTarget = {
+                        modelId: id,
+                        labelAsymId: target.chain_name,
+                    }
+                    if (target.hasOwnProperty('residue_numbers')) {
+                        for (let number of target.residue_numbers) {
+                            const newTargetWithSeqId = Object.assign({}, newTarget, {labelSeqId: number});
+                            targets.push(newTargetWithSeqId);
+                        }
+                    } else {
+                        targets.push(newTarget);
+                    }
+                }
+            }
+            this.viewer.select(targets, selection.mode, selection.modifier);
+        }
         this.setState({selection: selection});
     }
     handleFocusChange(focus) {
-        
+        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+        if (model_index >= 0) {
+            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            const targets = [];
+            if (focus.targets) {
+                for (let target of focus.targets) {
+                    const newTarget = {
+                        modelId: id,
+                        labelAsymId: target.chain_name,
+                    }
+                    if (target.hasOwnProperty('residue_numbers')) newTarget.labelSeqId = target.residue_numbers
+                    targets.push(newTarget);
+                }
+            }
+            this.viewer.setFocus(targets, focus.analyse);
+        }
         this.setState({focus: focus});
     }
     loadData(data) {
         if (typeof data === "object") {
             if (data.type === "mol") {
-                this.viewer.loadStructureFromData(data.data, data.format, false);
+                // first load the structure into viewer
+                this.viewer.loadStructureFromData(data.data, data.format, false).then(() => {
+                    // if user specified component(s), add them to the structure
+                    if (data.hasOwnProperty('component')) {
+                        this.handleComponentChange(data.component);
+                    }
+                });
             } else if (data.type === 'shape') {
                 this.loadShape(data);
             }
@@ -86,36 +134,48 @@ export default class MolstarViewer extends Component {
     loadShape(data) {
         
     }
+    addComponent(component) {
+        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+        if (model_index >= 0) {
+            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            const targets = [];
+            for (let target of component.targets) {
+                const newTarget = {
+                    modelId: id,
+                    labelAsymId: target.chain_name,
+                }
+                if (target.hasOwnProperty('residue_numbers')) newTarget.labelSeqId = target.residue_numbers
+                targets.push(newTarget);
+            }
+            this.viewer.createComponent(component.label, targets, component.representation);
+        }
+    }
     componentDidMount() {
         if (this.viewerRef.current) {
             this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
             if (this.state.data) {
-                const { data } = this.state.data;
-                if (Array.isArray(data)) {
-                    data.forEach((obj) => {
-                        this.loadData(obj);
-                    });
-                } else if (typeof data === "object") {
-                    this.loadData(data);
-                }
+                this.handleDataChange(this.state.data);
+            }
+            if (this.state.selection) {
+                this.handleSelectionChange(this.state.selection);
+            }
+            if (this.state.focus) {
+                this.handleFocusChange(this.state.focus);
             }
         }
     }
     componentDidUpdate(prevProps) {
         if (this.props.data !== prevProps.data) {
-          this.handleDataChange(this.props.data);
-        }
-        if (this.props.component !== prevProps.component) {
-          this.handleComponentChange(this.props.component);
+            this.handleDataChange(this.props.data);
         }
         if (this.props.selection !== prevProps.selection) {
-          this.handleSelectionChange(this.props.selection);
+            this.handleSelectionChange(this.props.selection);
         }
         if (this.props.focus !== prevProps.focus) {
-          this.handleFocusChange(this.props.focus);
+            this.handleFocusChange(this.props.focus);
         }
-      }
-    
+    }
+
     render() {
         return (<div 
             id={this.props.id} 
@@ -123,7 +183,6 @@ export default class MolstarViewer extends Component {
             style={this.state.style}
             data={this.props.data}
             layout={this.state.layout}
-            component={this.props.component}
             selection={this.props.selection}
             focus={this.props.focus}
             />
@@ -146,7 +205,7 @@ MolstarViewer.propTypes = {
 
     /**
      * Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.
-     * The data can be generated with python method `parse_for_molstar`.
+     * The data can be generated with python method `parse_molecule`.
      */
     data: PropTypes.any,
 
@@ -156,11 +215,6 @@ MolstarViewer.propTypes = {
      * The layout is not allowed to be changed once the component has been initialized.
      */
     layout: PropTypes.object,
-    
-    /**
-     * The additional components to be created in the molstar viewer. Leave it undefined to keep the molstar default settings.
-     */
-    component: PropTypes.object,
     
     /**
      * The structure region to be selected in the molstar viewer.
