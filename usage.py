@@ -6,7 +6,7 @@ import plotly.express as px
 from dash_molstar.utils import molstar_helper
 import dash_bootstrap_components as dbc
 
-app = Dash(__name__, assets_folder='dash_molstar/bootstrap')
+app = Dash(__name__, assets_folder='bootstrap')
 df = pd.read_json("H_G_interaction.json")
 app.layout = html.Div([
     dbc.Row([
