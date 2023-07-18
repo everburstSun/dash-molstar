@@ -17,7 +17,7 @@ Import `dash_molstar` and then you can add it to your layout as you did to other
 
 ```py
 import dash_molstar
-from dash import Dash
+from dash import Dash, html
 
 app = Dash(__name__)
 app.layout = html.Div(
