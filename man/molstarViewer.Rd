@@ -10,12 +10,14 @@ The Molstar viewer component for dash
 }
 
 \usage{
-molstarViewer(id=NULL, data=NULL, focus=NULL, layout=NULL, selection=NULL,
-style=NULL)
+molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, layout=NULL,
+selection=NULL, style=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
+
+\item{className}{Character. The HTML property `class` for additional class names of the container of molstar viewer.}
 
 \item{data}{Logical | numeric | character | named list | unnamed list. Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.
 The data can be generated with python method `parse_molecule`.}
