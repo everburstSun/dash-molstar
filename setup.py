@@ -13,7 +13,7 @@ setup(
     version=package["version"],
     author=package['author'],
     packages=[package_name],
-    package_data={package_name: ['utils/*']},
+    package_data={package_name: ['utils/*', 'rcsb-molstar.js']},
     include_package_data=True,
     license=package['license'],
     description=package.get('description', package_name),

@@ -103,6 +103,13 @@
         "required": false,
         "description": "The HTML property `style` to control the appearence of the container of molstar viewer."
       },
+      "className": {
+        "type": {
+          "name": "string"
+        },
+        "required": false,
+        "description": "The HTML property `class` for additional class names of the container of molstar viewer."
+      },
       "data": {
         "type": {
           "name": "any"

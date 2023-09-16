@@ -1,5 +1,6 @@
 from io import IOBase
 import os
+from urllib.parse import urlparse
 
 
 def parse_molecule(inp, fmt=None, component=None):
@@ -18,7 +19,7 @@ def parse_molecule(inp, fmt=None, component=None):
         Supported formats include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` (default: `None`)
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
-        If is not specified, molstar will use its default settings. (default: `None`)
+        If not specified, molstar will use its default settings. (default: `None`)
 
         Use helper function `create_component` to generate correct data for this parameter.
 
@@ -34,7 +35,7 @@ def parse_molecule(inp, fmt=None, component=None):
     """
     # provided a filename as input
     if os.path.isfile(inp):
-        # if format if not specified, deduce it from filename
+        # if format is not specified, infer from filename
         if not fmt:
             name, fmt = os.path.splitext(inp)
         with open(inp, 'r') as f:
@@ -47,7 +48,7 @@ def parse_molecule(inp, fmt=None, component=None):
         else:
             data = inp
         if type(data) == bytes: data = data.decode()
-    if fmt == None: raise RuntimeError("The format must be specified if you haven't provided a file name.")
+    if not fmt: raise RuntimeError("The format must be specified if you haven't provided a file name.")
     fmt = fmt.strip('.').lower()
     if fmt not in ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2"]:
         raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
@@ -61,13 +62,101 @@ def parse_molecule(inp, fmt=None, component=None):
     if component: d['component'] = component
     return d
 
-def get_cube():
-    pass
+def parse_url(url, fmt=None, component=None, mol=True):
+    """
+    Parse the URL for `data` parameter of molstar viewer. 
+    The url can be either a structure and a molstar state/session file.
+
+    Parameters
+    ----------
+    `url` — str
+        The URL to the molecule.
+    `fmt` — str (optional)
+        Format of the input molecule. (default: `None`)
+
+        Supported formats of structures include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` 
+
+        Supported formats of states and sessions include `json`, `molj`, `molx`, `zip`
+    `component` — dict | List[dict] (optional)
+        Component to be created in molstar. 
+        If not specified, molstar will use its default settings. (default: `None`)
+
+        Use helper function `create_component` to generate correct data for this parameter.
+    `mol` — bool (optional)
+        If the url is a structure file, set `mol=True`.
+        If the url is a molstar state or session file, set `mol=False`.
+
+    Returns
+    -------
+    `dict`
+        The value for the `data` parameter.
+    """
+    # try to automatically infer file format
+    parsed_url = urlparse(url)
+    if not fmt:
+        name, fmt = os.path.splitext(parsed_url.path)
+    if not fmt:
+        raise RuntimeError("The format must be specified if you are not providing static resources.")
+    fmt = fmt.strip('.').lower()
+    if mol and fmt not in ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2"]:
+        raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
+    if not mol and fmt not in ["json", "molj", "molx", "zip"]:
+        raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
+    if fmt == 'cif': fmt = 'mmcif'
+    if fmt == 'cifcore': fmt = 'cifCore'
+    d = {
+        "type": 'url',
+        "urlfor": 'mol' if mol else 'snapshot',
+        "data": url,
+        "format": fmt
+    }
+    if component: d['component'] = component
+    return d
+
+def get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red'):
+    """
+    Generate a bounding box in the viewer with given parameters.
+
+    Parameters
+    ----------
+    `min_xyz` — tuple (optional)
+        Minimum of x, y and z values (default: `(0,0,0)`)
+    `max_xyz` — tuple (optional)
+        Maximum of x, y and z values (default: `(1,1,1)`)
+    `radius` — float (optional)
+        Border radius in angstrom (default: `0.1`)
+    `label` — str (optional)
+        The box label to be shown in the viewer (default: `"Bounding Box"`)
+    `color` — str (optional)
+        X11 color names (default: `'red'`)
+        Avaliable options can be found at [here](https://www.w3.org/TR/css-color-3/#svg-color)
+
+    Returns
+    -------
+    `dict`
+        Dict for the `data` parameter of MolstarViewer
+
+    Raises
+    ------
+    `ValueError`
+        Raised if input coordinates are not 3-dimensional
+    """
+    if len(min_xyz) != 3: raise ValueError("Coordinates must be 3-dimensional!")
+    if len(max_xyz) != 3: raise ValueError("Coordinates must be 3-dimensional!")
+    return {
+        'type': 'shape',
+        'shape': 'box',
+        'min': min_xyz,
+        'max': max_xyz,
+        'radius': radius,
+        'label': label,
+        'color': color
+    }
 
 def get_sphere(center, radius):
     pass
 
-def get_targets(chain, residue=None):
+def get_targets(chain, residue=None, auth=False):
     """
     Select residues from a given chain. If no residue was specified, the entire chain will be selected.
 
@@ -77,15 +166,16 @@ def get_targets(chain, residue=None):
         Name of the target chain
     `residue` — int | List[int] (optional)
         Residue index of the target residues, started from 0. (default: `None`)
+    `author` — bool (optional)
+        If a cif file was loaded, set `auth` to `True` to select the authentic chain names and residue numbers (default: `False`)
 
     Returns
     -------
     `dict`
         Selected residues
     """
-    if not residue:
-        target = {'chain_name': chain}
-    else:
+    target = {'chain_name': chain, 'author': auth}
+    if residue:
         if type(residue) != list: residue = [residue]
         residues = []
         for res in residue:
@@ -95,13 +185,8 @@ def get_targets(chain, residue=None):
                     num = eval(res)
                     residues.append(num)
                 except SyntaxError:
-                    if res[-1].isalpha():
-                        num = eval(res[:-1])
-                        residues.append(num)
-        target = {
-            'chain_name': chain,
-            'residue_numbers': residues
-        }
+                    residues.append(res)
+        target['residue_numbers'] = residues
     return target
 
 def create_component(label, targets, representation='cartoon'):

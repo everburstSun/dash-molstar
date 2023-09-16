@@ -32,16 +32,19 @@ export default class MolstarViewer extends Component {
             showWelcomeToast: false,
         };
         const defaultStyle = {
-            'z-index': 10,
+            'zIndex': 10,
             'position': 'relative'
         };
         this.state = {
             data: props.data,
             layout: defaultLayout,
             style: defaultStyle,
+            className: props.className,
             selection: props.selection,
             focus: props.focus
         };
+        this.loadedShapes = {};
+        this.loadedStructures = {};
         this.viewerRef = createRef();
         const updatedLayout = Object.assign({}, this.state.layout, props.layout);
         this.state.layout = updatedLayout;
@@ -49,7 +52,22 @@ export default class MolstarViewer extends Component {
         this.state.style = updatedStyle;
     }
     handleDataChange(data) {
-        this.viewer.clear();
+        // if new molecule was loaded into the viewer, clear the stage before loading
+        if (Array.isArray(data)) {
+            for (let d of data) {
+                if (d.type === 'mol' || d.type === 'url') {
+                    this.viewer.clear();
+                    this.loadedShapes = {};
+                    this.loadedStructures = {};
+                    break;
+                }
+            }
+        } else if (typeof data === "object" && (data.type === "mol" || data.type === "url")) {
+            this.viewer.clear();
+            this.loadedShapes = {};
+            this.loadedStructures = {};
+        }
+        // loading data
         if (data) {
             if (Array.isArray(data)) {
                 data.forEach((obj) => {
@@ -78,19 +96,21 @@ export default class MolstarViewer extends Component {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
             const targets = [];
             if (selection.targets) {
+                // convert data from python to molstar data structure
                 for (let target of selection.targets) {
                     const newTarget = {
                         modelId: id,
-                        labelAsymId: target.chain_name,
+                        ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                     }
+                    // check if any residue number has been selected
                     if (target.hasOwnProperty('residue_numbers')) {
-                        for (let number of target.residue_numbers) {
-                            const newTargetWithSeqId = Object.assign({}, newTarget, {labelSeqId: number});
-                            targets.push(newTargetWithSeqId);
+                        if (target.author) {
+                            newTarget.authSeqId = target.residue_numbers;
+                        } else {
+                            newTarget.labelSeqId = target.residue_numbers;
                         }
-                    } else {
-                        targets.push(newTarget);
                     }
+                    targets.push(newTarget);
                 }
             }
             this.viewer.select(targets, selection.mode, selection.modifier);
@@ -103,12 +123,20 @@ export default class MolstarViewer extends Component {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
             const targets = [];
             if (focus.targets) {
+                // convert data from python to molstar data structure
                 for (let target of focus.targets) {
                     const newTarget = {
                         modelId: id,
-                        labelAsymId: target.chain_name,
+                        ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                     }
-                    if (target.hasOwnProperty('residue_numbers')) newTarget.labelSeqId = target.residue_numbers
+                    // check if any residue number has been selected
+                    if (target.hasOwnProperty('residue_numbers')) {
+                        if (target.author) {
+                            newTarget.authSeqId = target.residue_numbers;
+                        } else {
+                            newTarget.labelSeqId = target.residue_numbers;
+                        }
+                    }
                     targets.push(newTarget);
                 }
             }
@@ -126,25 +154,60 @@ export default class MolstarViewer extends Component {
                         this.handleComponentChange(data.component);
                     }
                 });
+            } else if (data.type === 'url') {
+                // load url for molecules
+                if (data.urlfor === 'mol') {
+                    this.viewer.loadStructureFromUrl(data.data, data.format, false).then(() => {
+                        if (data.hasOwnProperty('component')) {
+                            this.handleComponentChange(data.component);
+                        }
+                    });
+                } else {
+                    // load url for molstar snapshot file
+                    this.viewer.loadSnapshotFromUrl(data.data, data.format);
+                }
             } else if (data.type === 'shape') {
                 this.loadShape(data);
             }
         }
     }
     loadShape(data) {
-        
+        // if the provided data label existed, remove it first before creating a new one
+        if (data.label && this.loadedShapes[data.label]) {
+            this.viewer.removeRef(this.loadedShapes[data.label]);
+            delete this.loadedShapes[data.label];
+        }
+        // creating new shapes
+        if (data.shape === 'box') {
+            this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
+            this.loadedShapes[data.label] = ref;
+        });
+        // } else if (data.shape === 'sphere') {
+        //     this.viewer.createSphere(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
+        //     this.loadedShapes[data.label] = ref;
+        }//);
     }
     addComponent(component) {
+        // check if there was any structure loaded in the viewer
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
         if (model_index >= 0) {
+            // get molstar internal structure ID for the last loaded model
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            // construct molstar target object from python helper data
             const targets = [];
             for (let target of component.targets) {
                 const newTarget = {
                     modelId: id,
-                    labelAsymId: target.chain_name,
+                    ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                 }
-                if (target.hasOwnProperty('residue_numbers')) newTarget.labelSeqId = target.residue_numbers
+                // check if any residue number has been selected
+                if (target.hasOwnProperty('residue_numbers')) {
+                    if (target.author) {
+                        newTarget.authSeqId = target.residue_numbers;
+                    } else {
+                        newTarget.labelSeqId = target.residue_numbers;
+                    }
+                }
                 targets.push(newTarget);
             }
             this.viewer.createComponent(component.label, targets, component.representation);
@@ -181,6 +244,7 @@ export default class MolstarViewer extends Component {
             id={this.props.id} 
             ref={this.viewerRef} 
             style={this.state.style}
+            className={this.state.className}
             data={this.props.data}
             layout={this.state.layout}
             selection={this.props.selection}
@@ -202,6 +266,11 @@ MolstarViewer.propTypes = {
      * The HTML property `style` to control the appearence of the container of molstar viewer.
      */
     style: PropTypes.object,
+
+    /**
+     * The HTML property `class` for additional class names of the container of molstar viewer.
+     */
+    className: PropTypes.string,
 
     /**
      * Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.
