@@ -18,6 +18,7 @@ Import `dash_molstar` and then you can add it to your layout as you did to other
 ```py
 import dash_molstar
 from dash import Dash, html
+from dash_molstar.utils import molstar_helper
 
 app = Dash(__name__)
 app.layout = html.Div(
@@ -34,10 +35,9 @@ if __name__ == '__main__':
 Load a structure from local file with callback:
 
 ```py
-# You can either use @app.callback or @Dash.callback for the decorator here.
-@callback(Output('viewer', 'data'), 
-          Input('load_protein', 'n_clicks'),
-          prevent_initial_call=True)
+@app.callback(Output('viewer', 'data'), 
+              Input('load_protein', 'n_clicks'),
+              prevent_initial_call=True)
 def display_output(yes):
     data = molstar_helper.parse_molecule('3u7y.pdb')
     return data
@@ -46,9 +46,9 @@ def display_output(yes):
 Or from a remote url:
 
 ```py
-@callback(Output('viewer', 'data'), 
-          Input('load_protein', 'n_clicks'),
-          prevent_initial_call=True)
+@app.callback(Output('viewer', 'data'), 
+              Input('load_protein', 'n_clicks'),
+              prevent_initial_call=True)
 def display_output(yes):
     data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.cif')
     return data
