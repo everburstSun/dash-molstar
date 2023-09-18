@@ -24,10 +24,34 @@ app.layout = html.Div(
     dash_molstar.MolstarViewer(
         id='viewer', style={'width': '500px', 'height':'500px'}
     ),
+    html.Button(id='load_protein', children="Load Protein")
 )
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+```
+
+Load a structure from local file with callback:
+
+```py
+# You can either use @app.callback or @Dash.callback for the decorator here.
+@callback(Output('viewer', 'data'), 
+          Input('load_protein', 'n_clicks'),
+          prevent_initial_call=True)
+def display_output(yes):
+    data = molstar_helper.parse_molecule('3u7y.pdb')
+    return data
+```
+
+Or from a remote url:
+
+```py
+@callback(Output('viewer', 'data'), 
+          Input('load_protein', 'n_clicks'),
+          prevent_initial_call=True)
+def display_output(yes):
+    data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.cif')
+    return data
 ```
 
 Clone the repository to your local directory and run the following command to see the demo:
