@@ -166,7 +166,7 @@ def get_targets(chain, residue=None, auth=False):
         Name of the target chain
     `residue` — int | List[int] (optional)
         Residue index of the target residues, started from 0. (default: `None`)
-    `author` — bool (optional)
+    `auth` — bool (optional)
         If a cif file was loaded, set `auth` to `True` to select the authentic chain names and residue numbers (default: `False`)
 
     Returns
@@ -174,7 +174,7 @@ def get_targets(chain, residue=None, auth=False):
     `dict`
         Selected residues
     """
-    target = {'chain_name': chain, 'author': auth}
+    target = {'chain_name': chain, 'auth': auth}
     if residue:
         if type(residue) != list: residue = [residue]
         residues = []
@@ -258,7 +258,7 @@ def get_selection(targets, select=True, add=False):
 
     if add: modifier = 'add'
     else: modifier = 'set'
-
+    if type(targets) != list: targets = [targets]
     return {
         'targets': targets,
         'mode': mode,
@@ -281,6 +281,7 @@ def get_focus(targets, analyse=False):
     `dict`
         Focus data for callbacks
     """
+    if type(targets) != list: targets = [targets]
     return {
         'targets': targets,
         'analyse': analyse

@@ -100,11 +100,11 @@ export default class MolstarViewer extends Component {
                 for (let target of selection.targets) {
                     const newTarget = {
                         modelId: id,
-                        ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
+                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                     }
                     // check if any residue number has been selected
                     if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.author) {
+                        if (target.auth) {
                             newTarget.authSeqId = target.residue_numbers;
                         } else {
                             newTarget.labelSeqId = target.residue_numbers;
@@ -127,11 +127,11 @@ export default class MolstarViewer extends Component {
                 for (let target of focus.targets) {
                     const newTarget = {
                         modelId: id,
-                        ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
+                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                     }
                     // check if any residue number has been selected
                     if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.author) {
+                        if (target.auth) {
                             newTarget.authSeqId = target.residue_numbers;
                         } else {
                             newTarget.labelSeqId = target.residue_numbers;

@@ -1,5 +1,9 @@
 # dash-molstar Changelog
 
+## [1.1.1] - 2023-09-30
+### Bug fixes
+- Fixed the problem when selected only one target, the plugin would fail.
+
 ## [1.1.0] - 2023-09-16
 ### Added
 - Adding custom html class names for the molstar container
