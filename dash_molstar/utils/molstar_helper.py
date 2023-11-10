@@ -1,9 +1,46 @@
 from io import IOBase
 import os
+from uuid import uuid4
 from urllib.parse import urlparse
 
 
-def parse_molecule(inp, fmt=None, component=None):
+def get_uuid():
+    """
+    Generate a random uuid.
+
+    Returns
+    -------
+    `str`
+        Random uuid.
+    """
+    return str(uuid4())
+
+
+def get_chain_names(pdb_file):
+    """
+    Get the chain names of a pdb file.
+
+    Parameters
+    ----------
+    `pdb_file` — str | file-like object
+        The file path to pdb file or the file content of pdb file.
+
+    Returns
+    -------
+    `List[str]`
+        Chain names of the pdb file.
+    """
+    from Bio.PDB import PDBParser
+    parser = PDBParser()
+    if isinstance(pdb_file, IOBase):
+        structure = parser.get_structure('pdb_structure', pdb_file)
+    else:
+        structure = parser.get_structure('pdb_structure', pdb_file)
+    return [c.id for c in structure.get_chains()]
+
+
+
+def parse_molecule(inp, fmt=None, component=None, name=None):
     """
     Parse the molecule for `data` parameter of molstar viewer.
 
@@ -55,6 +92,7 @@ def parse_molecule(inp, fmt=None, component=None):
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
     d = {
+        'label': name or get_uuid(),
         "type": 'mol',
         "data": data,
         "format": fmt
@@ -62,7 +100,7 @@ def parse_molecule(inp, fmt=None, component=None):
     if component: d['component'] = component
     return d
 
-def parse_url(url, fmt=None, component=None, mol=True):
+def parse_url(url, fmt=None, component=None, mol=True, name=None):
     """
     Parse the URL for `data` parameter of molstar viewer. 
     The url can be either a structure and a molstar state/session file.
@@ -105,6 +143,7 @@ def parse_url(url, fmt=None, component=None, mol=True):
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
     d = {
+        'label': name or get_uuid(),
         "type": 'url',
         "urlfor": 'mol' if mol else 'snapshot',
         "data": url,
@@ -112,6 +151,7 @@ def parse_url(url, fmt=None, component=None, mol=True):
     }
     if component: d['component'] = component
     return d
+
 
 def get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red'):
     """
@@ -231,7 +271,7 @@ def create_component(label, targets, representation='cartoon'):
         'representation': r
     }
 
-def get_selection(targets, select=True, add=False):
+def get_selection(targets, select=True, add=False, molecule=None):
     """
     Select specific targets in the molstar viewer.
 
@@ -260,12 +300,14 @@ def get_selection(targets, select=True, add=False):
     else: modifier = 'set'
     if type(targets) != list: targets = [targets]
     return {
+        'molecule': molecule,
         'targets': targets,
         'mode': mode,
         'modifier': modifier
     }
 
-def get_focus(targets, analyse=False):
+
+def get_focus(targets, analyse=False, molecule=None):
     """
     Let the camera focus on the specified targets. If `analyse` were set to true, non-covalent interactions within 5 angstroms will be analyzed.
 
@@ -283,6 +325,7 @@ def get_focus(targets, analyse=False):
     """
     if type(targets) != list: targets = [targets]
     return {
+        'molecule': molecule,
         'targets': targets,
         'analyse': analyse
     }

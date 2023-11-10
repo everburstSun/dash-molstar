@@ -59,10 +59,12 @@ def load_protein(yes, yess, yesss):
         ]
         cdrs = molstar_helper.create_component("CDRs", CDRs, 'orientation')
         ag = molstar_helper.create_component("Antigen", molstar_helper.get_targets(chain="G"), 'molecular-surface')
+        #ag = molstar_helper.create_component("Antigen", molstar_helper.get_targets(chain="G"), 'ball-and-stick')
+
         component = None
         if ctx.triggered_id == 'load_protein_rep':
-            component=[ag,cdrs]
-        data = molstar_helper.parse_molecule('3u7y.pdb',component=component)
+            component = [ag, cdrs]
+        data = molstar_helper.parse_molecule('3u7y.pdb', component=component)
     else:
         data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.pdb')
     return data
@@ -91,12 +93,12 @@ def mouse_event(hoverData, clickData, onclick):
         elif onclick == '3':
             select = True
             focus = True
-    if not data: return molstar_helper.get_selection(None, select=select, add=False), focusdata
+    if not data: return molstar_helper.get_selection([], select=select, add=False), focusdata
     residue1 = data['points'][0]['x']
     residue1 = molstar_helper.get_targets(residue1[0], residue1[1:])
     residue2 = data['points'][0]['y']
     residue2 = molstar_helper.get_targets(residue2[0], residue2[1:])
-    seldata = molstar_helper.get_selection([residue1, residue2], select=select, add=False)
+    seldata = molstar_helper.get_selection([residue1, residue2], select=select, add=True)
     if focus: focusdata = molstar_helper.get_focus([residue1, residue2], analyse=True)
     return seldata, focusdata
 

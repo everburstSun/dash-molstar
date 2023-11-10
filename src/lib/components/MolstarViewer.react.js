@@ -1,5 +1,6 @@
-import React, {Component, createRef} from 'react';
+import React, { Component, createRef } from 'react';
 import PropTypes from 'prop-types';
+
 
 /**
  * The Molstar viewer component for dash
@@ -36,173 +37,188 @@ export default class MolstarViewer extends Component {
             'position': 'relative'
         };
         this.state = {
-            data: props.data,
+            data: props.data || [],
             layout: defaultLayout,
             style: defaultStyle,
             className: props.className,
             selection: props.selection,
-            focus: props.focus
+            focus: props.focus,
         };
+
         this.loadedShapes = {};
         this.loadedStructures = {};
+        this.loadedComponents = {};
+        this.loadedSnapshots = {};
+
+        this.setProps = props.setProps;
         this.viewerRef = createRef();
         const updatedLayout = Object.assign({}, this.state.layout, props.layout);
         this.state.layout = updatedLayout;
         const updatedStyle = Object.assign({}, this.state.style, props.style);
         this.state.style = updatedStyle;
     }
-    handleDataChange(data) {
-        // if new molecule was loaded into the viewer, clear the stage before loading
-        if (Array.isArray(data)) {
-            for (let d of data) {
-                if (d.type === 'mol' || d.type === 'url') {
-                    this.viewer.clear();
-                    this.loadedShapes = {};
-                    this.loadedStructures = {};
-                    break;
-                }
+
+
+    getStructureByLabel(name) {
+        for (const structure of this.viewer._plugin.managers.structure.hierarchy.current.structures) {
+            if (structure.cell.obj.data.state.label === name) {
+                return structure;
             }
-        } else if (typeof data === "object" && (data.type === "mol" || data.type === "url")) {
-            this.viewer.clear();
-            this.loadedShapes = {};
-            this.loadedStructures = {};
         }
-        // loading data
-        if (data) {
-            if (Array.isArray(data)) {
-                data.forEach((obj) => {
-                    this.loadData(obj);
+    }
+
+    getStructuresByLabel(name) {
+        return this.viewer._plugin.managers.structure.hierarchy.current.structures.filter((structure) => structure.cell.obj.data.state.label === name);
+    }
+
+    syncItems() {
+        let items = this.state.data;
+
+        if (!Array.isArray(items)) {
+            items = [items];
+        }
+
+        const structureItems = items.filter((item) => item.type === 'mol' || item.type === 'url');
+        const shapeItems = items.filter((item) => item.type === 'shape');
+
+        // sync structures  
+        let newLabels = [];
+        structureItems.forEach((item) => {
+            const label = item.hasOwnProperty('label') ? item.label : '';
+            newLabels.push(label);
+            this.syncStructure(label, item);
+        });
+        for (const [label, ref] of Object.entries(this.loadedStructures)) {
+            if (!newLabels.includes(label)) {
+                delete this.loadedComponents[label];
+                this.getStructuresByLabel(label).forEach((structure) => {
+
+                    this.viewer.removeRef(structure.cell.sourceRef);
                 });
-            } else if (typeof data === "object") {
-                this.loadData(data);
+                delete this.loadedStructures[label];
             }
-        }
-        this.setState({data: data});
+        };
+
+        // sync shapes
+        newLabels = [];
+        shapeItems.forEach((item) => {
+            const label = item.hasOwnProperty('label') ? item.label : '';
+            newLabels.push(label);
+            this.syncShape(item);
+        });
+        for (const [label, ref] of Object.entries(this.loadedShapes)) {
+            if (!newLabels.includes(label)) {
+                this.viewer.removeRef(ref);
+                delete this.loadedShapes[label];
+            }
+        };
     }
-    handleComponentChange(component) {
-        if (component) {
-            if (Array.isArray(component)) {
-                component.forEach((obj) => {
-                    this.addComponent(obj);
+
+    syncStructure(label, item) {
+        if (!this.loadedStructures[label]) {
+            this.loadedStructures[label] = 1;
+            if (item.type === "mol") {
+                this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
+                    this.loadedStructures[label] = 2;
+                    this.syncComponent(label, item.component);
+                    this.viewer.resetCamera();
                 });
-            } else if (typeof component === "object") {
-                this.addComponent(component);
-            }
-        }
-    }
-    handleSelectionChange(selection) {
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            const targets = [];
-            if (selection.targets) {
-                // convert data from python to molstar data structure
-                for (let target of selection.targets) {
-                    const newTarget = {
-                        modelId: id,
-                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-                    }
-                    // check if any residue number has been selected
-                    if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.auth) {
-                            newTarget.authSeqId = target.residue_numbers;
-                        } else {
-                            newTarget.labelSeqId = target.residue_numbers;
-                        }
-                    }
-                    targets.push(newTarget);
-                }
-            }
-            this.viewer.select(targets, selection.mode, selection.modifier);
-        }
-        this.setState({selection: selection});
-    }
-    handleFocusChange(focus) {
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            const targets = [];
-            if (focus.targets) {
-                // convert data from python to molstar data structure
-                for (let target of focus.targets) {
-                    const newTarget = {
-                        modelId: id,
-                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-                    }
-                    // check if any residue number has been selected
-                    if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.auth) {
-                            newTarget.authSeqId = target.residue_numbers;
-                        } else {
-                            newTarget.labelSeqId = target.residue_numbers;
-                        }
-                    }
-                    targets.push(newTarget);
-                }
-            }
-            this.viewer.setFocus(targets, focus.analyse);
-        }
-        this.setState({focus: focus});
-    }
-    loadData(data) {
-        if (typeof data === "object") {
-            if (data.type === "mol") {
-                // first load the structure into viewer
-                this.viewer.loadStructureFromData(data.data, data.format, false).then(() => {
-                    // if user specified component(s), add them to the structure
-                    if (data.hasOwnProperty('component')) {
-                        this.handleComponentChange(data.component);
-                    }
-                });
-            } else if (data.type === 'url') {
-                // load url for molecules
-                if (data.urlfor === 'mol') {
-                    this.viewer.loadStructureFromUrl(data.data, data.format, false).then(() => {
-                        if (data.hasOwnProperty('component')) {
-                            this.handleComponentChange(data.component);
-                        }
+            } else if (item.type === "url") {
+                if (item.urlfor === 'mol') {
+                    this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
+                        this.loadedStructures[label] = 2;
+                        this.syncComponent(label, item.component);
+                        this.viewer.resetCamera();
                     });
                 } else {
-                    // load url for molstar snapshot file
-                    this.viewer.loadSnapshotFromUrl(data.data, data.format);
+                    this.viewer.loadSnapshotFromUrl(item.data, item.format).then((x) => {
+                        this.loadedSnapshots[label] = x.snapshot.ref;
+                    });
                 }
-            } else if (data.type === 'shape') {
-                this.loadShape(data);
             }
+        } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[label] === 2) {
+            this.syncComponent(label, item.component);
         }
     }
-    loadShape(data) {
-        // if the provided data label existed, remove it first before creating a new one
-        if (data.label && this.loadedShapes[data.label]) {
-            this.viewer.removeRef(this.loadedShapes[data.label]);
-            delete this.loadedShapes[data.label];
+
+
+    syncComponent(label, components) {
+        components = components || [];
+        if (!Array.isArray(components)) {
+            components = [components];
         }
-        // creating new shapes
-        if (data.shape === 'box') {
-            this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
-            this.loadedShapes[data.label] = ref;
+        const loadedComponents = this.loadedComponents[label] || [];
+        this.loadedComponents[label] = loadedComponents;
+        const structure = this.getStructureByLabel(label);
+        const id = structure.cell.obj.data.units[0].model.id;
+        components.forEach((component) => {
+            let componentLabel = component.hasOwnProperty('label') ? component.label : '';
+            if (componentLabel === 'Polymer') {
+                this.viewer.removeComponent(componentLabel);
+            }
+            componentLabel = `${label}.${componentLabel}`;
+
+            if (!loadedComponents.includes(componentLabel)) {
+
+                const targets = [];
+                for (let target of component.targets) {
+                    const newTarget = {
+                        modelId: id,
+                        ...target.author ? { authAsymId: target.chain_name } : { labelAsymId: target.chain_name },
+                    }
+                    if (target.hasOwnProperty('residue_numbers')) {
+                        if (target.author) {
+                            newTarget.authSeqId = target.residue_numbers;
+                        } else {
+                            newTarget.labelSeqId = target.residue_numbers;
+                        }
+                    }
+                    targets.push(newTarget);
+                }
+
+                this.viewer.createComponent(componentLabel, targets, component.representation);
+            }
+            loadedComponents.push(componentLabel);
         });
-        // } else if (data.shape === 'sphere') {
-        //     this.viewer.createSphere(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
-        //     this.loadedShapes[data.label] = ref;
-        }//);
+
+        structure.components.forEach((component) => {
+            const componentLabel = component.cell.obj.data.label;
+            if (!loadedComponents.includes(componentLabel) && componentLabel.startsWith(`${label}.`)) {
+                this.viewer.removeComponent(componentLabel);
+                // remove from list
+                loadedComponents.splice(loadedComponents.indexOf(componentLabel), 1);
+            }
+        });
     }
-    addComponent(component) {
-        // check if there was any structure loaded in the viewer
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            // get molstar internal structure ID for the last loaded model
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            // construct molstar target object from python helper data
-            const targets = [];
-            for (let target of component.targets) {
+
+    syncSelections() {
+        const selection = this.state.selection;
+        if (!selection) {
+            this.viewer.clearSelection("select");
+            this.viewer.clearSelection("hover");
+            return;
+        }
+        const molecule_name = this.state.selection.molecule;
+        let structure = null;
+        if (!molecule_name) {
+            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+            structure = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index];
+        } else {
+            structure = this.getStructureByLabel(molecule_name);
+        }
+
+        const id = structure.cell.obj.data.units[0].model.id;
+        const targets = [];
+        if (selection.targets) {
+            // convert data from python to molstar data structure
+            for (let target of selection.targets) {
                 const newTarget = {
                     modelId: id,
-                    ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
+                    ...target.auth ? { authAsymId: target.chain_name } : { labelAsymId: target.chain_name },
                 }
                 // check if any residue number has been selected
                 if (target.hasOwnProperty('residue_numbers')) {
-                    if (target.author) {
+                    if (target.auth) {
                         newTarget.authSeqId = target.residue_numbers;
                     } else {
                         newTarget.labelSeqId = target.residue_numbers;
@@ -210,58 +226,121 @@ export default class MolstarViewer extends Component {
                 }
                 targets.push(newTarget);
             }
-            this.viewer.createComponent(component.label, targets, component.representation);
         }
+        this.viewer.select(targets, selection.mode, selection.modifier);
     }
-    componentDidMount() {
-        if (this.viewerRef.current) {
-            this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
-            if (this.state.data) {
-                this.handleDataChange(this.state.data);
-            }
-            if (this.state.selection) {
-                this.handleSelectionChange(this.state.selection);
-            }
-            if (this.state.focus) {
-                this.handleFocusChange(this.state.focus);
+
+    syncFocus() {
+        const focus = this.state.focus;
+        if (!focus) {
+            this.viewer.clearFocus();
+            return;
+        }
+        const molecule_name = this.state.focus.molecule;
+        let structure = null;
+        if (!molecule_name) {
+            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+            structure = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index];
+        } else {
+            structure = this.getStructureByLabel(molecule_name);
+        }
+
+        const id = structure.cell.obj.data.units[0].model.id;
+        const targets = [];
+        if (focus.targets) {
+            // convert data from python to molstar data structure
+            for (let target of focus.targets) {
+                const newTarget = {
+                    modelId: id,
+                    ...target.auth ? { authAsymId: target.chain_name } : { labelAsymId: target.chain_name },
+                }
+                // check if any residue number has been selected
+                if (target.hasOwnProperty('residue_numbers')) {
+                    if (target.auth) {
+                        newTarget.authSeqId = target.residue_numbers;
+                    } else {
+                        newTarget.labelSeqId = target.residue_numbers;
+                    }
+                }
+                targets.push(newTarget);
             }
         }
+        this.viewer.setFocus(targets, focus.analyse);
     }
-    componentDidUpdate(prevProps) {
-        if (this.props.data !== prevProps.data) {
-            this.handleDataChange(this.props.data);
+
+    syncShape(item) {
+        if (this.loadedShapes[item.label]) {
+            return;
         }
-        if (this.props.selection !== prevProps.selection) {
-            this.handleSelectionChange(this.props.selection);
-        }
-        if (this.props.focus !== prevProps.focus) {
-            this.handleFocusChange(this.props.focus);
+        if (item.shape === 'box') {
+            this.viewer.createBoundingBox(item.label, item.min, item.max, item.radius, item.color).then((ref) => {
+                this.loadedShapes[item.label] = ref;
+            });
         }
     }
 
+
+    syncViewerState() {
+        this.syncItems();
+        this.syncSelections();
+        this.syncFocus();
+    }
+
+    componentDidMount() {
+        if (this.viewerRef.current) {
+            this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
+            this.syncViewerState();
+        }
+        let timeoutid = null;
+        if (this.viewerRef.current) {
+            this.resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    timeoutid && clearTimeout(timeoutid);
+                    timeoutid = setTimeout(this.viewer.handleResize.bind(this.viewer), 100);
+                }
+            });
+            this.resizeObserver.observe(this.viewerRef.current);
+        }
+    }
+
+    componentDidUpdate(prevProps) {
+        if (this.props.data !== prevProps.data) {
+            this.state.data = this.props.data;
+        } else if (this.props.selection !== prevProps.selection) {
+            this.state.selection = this.props.selection;
+        } else if (this.props.focus !== prevProps.focus) {
+            this.state.focus = this.props.focus;
+        }
+        this.syncViewerState();
+    }
+
     render() {
-        return (<div 
-            id={this.props.id} 
-            ref={this.viewerRef} 
+        return (<div
+            id={this.props.id}
+            ref={this.viewerRef}
             style={this.state.style}
             className={this.state.className}
             data={this.props.data}
             layout={this.state.layout}
             selection={this.props.selection}
             focus={this.props.focus}
-            />
+        />
         );
     }
 }
 
-MolstarViewer.defaultProps = {};
+
+MolstarViewer.defaultProps = {
+    data: [],
+};
+
 
 MolstarViewer.propTypes = {
     /**
      * The ID used to identify this component in Dash callbacks.
      */
     id: PropTypes.string,
-    
+
     /**
      * The HTML property `style` to control the appearence of the container of molstar viewer.
      */
@@ -284,12 +363,12 @@ MolstarViewer.propTypes = {
      * The layout is not allowed to be changed once the component has been initialized.
      */
     layout: PropTypes.object,
-    
+
     /**
      * The structure region to be selected in the molstar viewer.
      */
     selection: PropTypes.object,
-    
+
     /**
      * The structure region to let the camera focus on in the molstar viewer.
      */

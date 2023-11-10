@@ -4,87 +4,99 @@
     "displayName": "MolstarViewer",
     "methods": [
       {
-        "name": "handleDataChange",
+        "name": "getStructureByLabel",
         "docblock": null,
         "modifiers": [],
         "params": [
           {
-            "name": "data",
+            "name": "name",
             "type": null
           }
         ],
         "returns": null
       },
       {
-        "name": "handleComponentChange",
+        "name": "getStructuresByLabel",
         "docblock": null,
         "modifiers": [],
         "params": [
           {
-            "name": "component",
+            "name": "name",
             "type": null
           }
         ],
         "returns": null
       },
       {
-        "name": "handleSelectionChange",
+        "name": "syncItems",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "syncStructure",
         "docblock": null,
         "modifiers": [],
         "params": [
           {
-            "name": "selection",
+            "name": "label",
+            "type": null
+          },
+          {
+            "name": "item",
             "type": null
           }
         ],
         "returns": null
       },
       {
-        "name": "handleFocusChange",
+        "name": "syncComponent",
         "docblock": null,
         "modifiers": [],
         "params": [
           {
-            "name": "focus",
+            "name": "label",
+            "type": null
+          },
+          {
+            "name": "components",
             "type": null
           }
         ],
         "returns": null
       },
       {
-        "name": "loadData",
+        "name": "syncSelections",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "syncFocus",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "syncShape",
         "docblock": null,
         "modifiers": [],
         "params": [
           {
-            "name": "data",
+            "name": "item",
             "type": null
           }
         ],
         "returns": null
       },
       {
-        "name": "loadShape",
+        "name": "syncViewerState",
         "docblock": null,
         "modifiers": [],
-        "params": [
-          {
-            "name": "data",
-            "type": null
-          }
-        ],
-        "returns": null
-      },
-      {
-        "name": "addComponent",
-        "docblock": null,
-        "modifiers": [],
-        "params": [
-          {
-            "name": "component",
-            "type": null
-          }
-        ],
+        "params": [],
         "returns": null
       }
     ],
@@ -115,7 +127,11 @@
           "name": "any"
         },
         "required": false,
-        "description": "Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.\nThe data can be generated with python method `parse_molecule`."
+        "description": "Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.\nThe data can be generated with python method `parse_molecule`.",
+        "defaultValue": {
+          "value": "[]",
+          "computed": false
+        }
       },
       "layout": {
         "type": {

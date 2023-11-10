@@ -25,7 +25,8 @@
   "license": "LGPL-2.1",
   "dependencies": {
     "@rcsb/rcsb-molstar": "^2.6.0",
-    "ramda": "^0.26.1"
+    "ramda": "^0.26.1",
+    "resize-observer-polyfill": "^1.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.5.4",
