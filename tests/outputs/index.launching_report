@@ -1,0 +1,45 @@
+{
+  "title": "Report",
+  "sections": [
+    {
+      "title": "Docking Results",
+      "elements": [
+        {
+          "protein_path": "structure.pdb",
+          "ligand_path": "rank_0.sdf",
+          "gt_ligand_path": null,
+          "title": "Rank 0",
+          "description": "energy: 0.98995560",
+          "traj_path": null,
+          "type": "docking",
+          "height": "300px"
+        },
+        {
+          "protein_path": "structure.pdb",
+          "ligand_path": "rank_1.sdf",
+          "gt_ligand_path": null,
+          "title": "Rank 1",
+          "description": "energy: 0.98995477",
+          "traj_path": null,
+          "type": "docking",
+          "height": "300px"
+        },
+        {
+          "protein_path": "structure.pdb",
+          "ligand_path": "rank_2.sdf",
+          "gt_ligand_path": null,
+          "title": "Rank 2",
+          "description": "energy: 0.98993981",
+          "traj_path": null,
+          "type": "docking",
+          "height": "300px"
+        }
+      ],
+      "ncols": 1,
+      "description": "",
+      "chemical_formula": []
+    }
+  ],
+  "name": "index",
+  "description": ""
+}

@@ -5,6 +5,7 @@ from dash_molstar.utils import molstar_helper
 from rdkit.Chem import AllChem
 import dash_bootstrap_components as dbc
 from dash_pane_split import DashPaneSplit
+from rdkit.Chem import SDMolSupplier
 
 
 app = Dash(__name__)
