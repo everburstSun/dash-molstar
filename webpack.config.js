@@ -54,7 +54,7 @@ module.exports = (env, argv) => {
             library: dashLibraryName,
             libraryTarget: 'window',
         },
-        devtool,
+        devtool: 'source-map',
         externals,
         module: {
             rules: [
@@ -114,10 +114,6 @@ module.exports = (env, argv) => {
         },
         plugins: [
             new WebpackDashDynamicImport(),
-            new webpack.SourceMapDevToolPlugin({
-                filename: '[file].map',
-                exclude: ['async-plotlyjs']
-            })
         ]
     }
 };

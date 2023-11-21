@@ -45,6 +45,8 @@ export default class MolstarViewer extends Component {
             focus: props.focus,
         };
 
+        this.shouldAutoFocus = false;
+
         this.loadedShapes = {};
         this.loadedStructures = {};
         this.loadedComponents = {};
@@ -114,30 +116,50 @@ export default class MolstarViewer extends Component {
         };
     }
 
+    syncAutoFocus() {
+        setTimeout(() => {
+            this.setState({ focus: {
+                molecule: this.state.data[this.state.data.length - 1]?.label
+            }});
+        }, 100);
+    }
+
     syncStructure(label, item) {
         if (!this.loadedStructures[label]) {
             this.loadedStructures[label] = 1;
             if (item.type === "mol") {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
                     this.loadedStructures[label] = 2;
-                    this.syncComponent(label, item.component);
+                    item.hasOwnProperty('component') && this.syncComponent(label, item.component);
                     this.viewer.resetCamera();
+                    if (this.shouldAutoFocus) {
+                        this.syncAutoFocus();
+                        this.shouldAutoFocus = false;
+                    }
                 });
             } else if (item.type === "url") {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         this.loadedStructures[label] = 2;
-                        this.syncComponent(label, item.component);
+                        item.hasOwnProperty('component') && this.syncComponent(label, item.component);
                         this.viewer.resetCamera();
+                        if (this.shouldAutoFocus) {
+                            this.syncAutoFocus();
+                            this.shouldAutoFocus = false;
+                        }
                     });
                 } else {
                     this.viewer.loadSnapshotFromUrl(item.data, item.format).then((x) => {
                         this.loadedSnapshots[label] = x.snapshot.ref;
+                        if (this.shouldAutoFocus) {
+                            this.syncAutoFocus();
+                            this.shouldAutoFocus = false;
+                        }
                     });
                 }
             }
         } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[label] === 2) {
-            this.syncComponent(label, item.component);
+            item.hasOwnProperty('component') && this.syncComponent(label, item.component);
         }
     }
 
@@ -236,36 +258,27 @@ export default class MolstarViewer extends Component {
             this.viewer.clearFocus();
             return;
         }
-        const molecule_name = this.state.focus.molecule;
-        let structure = null;
+        const molecule_name = this.state.focus?.molecule
         if (!molecule_name) {
-            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-            structure = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index];
-        } else {
-            structure = this.getStructureByLabel(molecule_name);
+            return;
         }
-
-        const id = structure.cell.obj.data.units[0].model.id;
-        const targets = [];
-        if (focus.targets) {
-            // convert data from python to molstar data structure
-            for (let target of focus.targets) {
-                const newTarget = {
-                    modelId: id,
-                    ...target.auth ? { authAsymId: target.chain_name } : { labelAsymId: target.chain_name },
-                }
-                // check if any residue number has been selected
-                if (target.hasOwnProperty('residue_numbers')) {
-                    if (target.auth) {
-                        newTarget.authSeqId = target.residue_numbers;
-                    } else {
-                        newTarget.labelSeqId = target.residue_numbers;
-                    }
-                }
-                targets.push(newTarget);
+        let currentComponents = null;
+        const componentGroups = this.viewer._plugin.managers.structure.hierarchy.currentComponentGroups;
+        for (let i = 0; i < componentGroups.length; i++) {
+            currentComponents = componentGroups[i].filter(e => e.cell.obj.data.state.label === molecule_name);
+            if (currentComponents.length) {
+                break;
             }
         }
-        this.viewer.setFocus(targets, focus.analyse);
+
+        if (!currentComponents || !currentComponents.length) {
+            return;
+        }
+
+        this.viewer._plugin.managers.camera.focusSpheres(currentComponents, e => {
+            if (e.cell.state.isHidden) return;
+            return e.cell.obj?.data.boundary.sphere;
+        });
     }
 
     syncShape(item) {
@@ -305,7 +318,27 @@ export default class MolstarViewer extends Component {
 
     componentDidUpdate(prevProps) {
         if (this.props.data !== prevProps.data) {
-            this.state.data = this.props.data;
+            const data = this.props.data;
+            if (data && data.length) {
+                if (Array.isArray(data)) {
+                    for (let d of data) {
+                        if (d.type === 'mol' || d.type === 'url') {
+                            this.viewer.clear();
+                            this.loadedShapes = {};
+                            this.loadedStructures = {};
+                            break;
+                        }
+                    }
+                } else if (typeof data === "object" && (data.type === "mol" || data.type === "url")) {
+                    this.viewer.clear();
+                    this.loadedShapes = {};
+                    this.loadedStructures = {};
+                }
+                if (this.props.autoFocus) {
+                    this.shouldAutoFocus = true;
+                }
+            }
+            this.state.data = this.props.data || [];
         } else if (this.props.selection !== prevProps.selection) {
             this.state.selection = this.props.selection;
         } else if (this.props.focus !== prevProps.focus) {
@@ -378,5 +411,7 @@ MolstarViewer.propTypes = {
      * Dash-assigned callback that should be called to report property changes
      * to Dash, to make them available for callbacks.
      */
-    setProps: PropTypes.func
+    setProps: PropTypes.func,
+
+    autoFocus: PropTypes.bool,
 };
