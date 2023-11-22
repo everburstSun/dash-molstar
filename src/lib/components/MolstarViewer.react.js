@@ -1,6 +1,6 @@
 import React, { Component, createRef } from 'react';
 import PropTypes from 'prop-types';
-
+import _ from 'lodash';
 
 /**
  * The Molstar viewer component for dash
@@ -318,25 +318,14 @@ export default class MolstarViewer extends Component {
 
     componentDidUpdate(prevProps) {
         if (this.props.data !== prevProps.data) {
-            const data = this.props.data;
+            const data = _.differenceWith(prevProps.data, this.props.data, _.isEqual);
             if (data && data.length) {
-                if (Array.isArray(data)) {
-                    for (let d of data) {
-                        if (d.type === 'mol' || d.type === 'url') {
-                            this.viewer.clear();
-                            this.loadedShapes = {};
-                            this.loadedStructures = {};
-                            break;
-                        }
-                    }
-                } else if (typeof data === "object" && (data.type === "mol" || data.type === "url")) {
-                    this.viewer.clear();
-                    this.loadedShapes = {};
-                    this.loadedStructures = {};
+                for (let d of data) {
+                    d.label && this.viewer.removeComponent(d.label);
                 }
-                if (this.props.autoFocus) {
-                    this.shouldAutoFocus = true;
-                }
+            }
+            if (this.props.autoFocus) {
+                this.shouldAutoFocus = true;
             }
             this.state.data = this.props.data || [];
         } else if (this.props.selection !== prevProps.selection) {
