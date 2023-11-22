@@ -12,7 +12,7 @@ Keyword arguments:
 - id (string; optional):
     The ID used to identify this component in Dash callbacks.
 
-- autoFocus (boolean; optional)
+- autoFocus (boolean; default True)
 
 - className (string; optional):
     The HTML property `class` for additional class names of the
