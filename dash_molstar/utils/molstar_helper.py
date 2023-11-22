@@ -74,7 +74,8 @@ def parse_molecule(inp, fmt=None, component=None, name=None):
     if os.path.isfile(inp):
         # if format is not specified, infer from filename
         if not fmt:
-            name, fmt = os.path.splitext(inp)
+            _name, fmt = os.path.splitext(inp)
+            name = name or _name
         with open(inp, 'r') as f:
             data = f.read()
     else:

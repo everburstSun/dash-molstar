@@ -354,6 +354,7 @@ export default class MolstarViewer extends Component {
 
 MolstarViewer.defaultProps = {
     data: [],
+    autoFocus: true,
 };
 
 
