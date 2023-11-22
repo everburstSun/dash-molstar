@@ -255,7 +255,6 @@ def load_pockets(n_clicks, data):
 
 @app.callback(
     [
-        Output("viewer", "autoFocus", allow_duplicate=True),
         Output("viewer", "selection", allow_duplicate=True),
         Output("viewer", "focus", allow_duplicate=True),
     ],
@@ -285,7 +284,6 @@ def select_pocket(value, data):
             molstar_helper.get_targets(chain=chain_name, residue=residue_numbers)
         )
     return (
-        False,
         molstar_helper.get_selection(selections, select=True, add=False, molecule="Target Protein"),
         no_update,
         #molstar_helper.get_focus(selections, analyse=True, molecule="Target Protein"),

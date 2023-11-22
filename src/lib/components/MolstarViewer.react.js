@@ -1,6 +1,9 @@
 import React, { Component, createRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import { changeCameraRotation, structureLayingTransform } from 'molstar/lib/mol-plugin-state/manager/focus-camera/orient-axes';
+import { set } from 'ramda';
+
 
 /**
  * The Molstar viewer component for dash
@@ -117,12 +120,9 @@ export default class MolstarViewer extends Component {
     }
 
     syncAutoFocus() {
-
-        setTimeout(() => {
-            this.setState({ focus: {
-                molecule: this.state.data[this.state.data.length - 1]?.label
-            }});
-        }, 100);
+        this.props.setProps({ focus: {
+            molecule: this.state.data[this.state.data.length - 1]?.label
+        }});
     }
 
     syncStructure(label, item) {
@@ -251,6 +251,12 @@ export default class MolstarViewer extends Component {
             }
         }
         this.viewer.select(targets, selection.mode, selection.modifier);
+        // TODO: fix the bug of camera rotation, we need pocket instead of whole structure
+        const structures = [this.viewer._plugin.managers.interactivity.lociSelects.sel.referenceLoci.structure];
+        const { rotation } = structureLayingTransform(structures);
+        const newSnapshot = changeCameraRotation(this.viewer._plugin.canvas3d.camera.getSnapshot(), rotation);
+        const durationMs = 10;
+        this.viewer._plugin.managers.camera.setSnapshot(newSnapshot, durationMs);
     }
 
     syncFocus() {
@@ -331,14 +337,16 @@ export default class MolstarViewer extends Component {
                 this.shouldAutoFocus = false;
             }
             this.state.data = this.props.data || [];
+            this.syncItems();
         }
         if (this.props.selection !== prevProps.selection) {
             this.state.selection = this.props.selection;
+            this.syncSelections();
         }
         if (this.props.focus !== prevProps.focus) {
             this.state.focus = this.props.focus;
+            this.syncFocus();
         }
-        this.syncViewerState();
     }
 
     render() {
