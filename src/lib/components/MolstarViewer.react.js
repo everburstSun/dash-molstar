@@ -117,6 +117,7 @@ export default class MolstarViewer extends Component {
     }
 
     syncAutoFocus() {
+
         setTimeout(() => {
             this.setState({ focus: {
                 molecule: this.state.data[this.state.data.length - 1]?.label
@@ -131,7 +132,7 @@ export default class MolstarViewer extends Component {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
                     this.loadedStructures[label] = 2;
                     item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                    this.viewer.resetCamera();
+                    //this.viewer.resetCamera();
                     if (this.shouldAutoFocus) {
                         this.syncAutoFocus();
                         this.shouldAutoFocus = false;
@@ -142,7 +143,7 @@ export default class MolstarViewer extends Component {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         this.loadedStructures[label] = 2;
                         item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                        this.viewer.resetCamera();
+                        //this.viewer.resetCamera();
                         if (this.shouldAutoFocus) {
                             this.syncAutoFocus();
                             this.shouldAutoFocus = false;
@@ -295,8 +296,8 @@ export default class MolstarViewer extends Component {
 
     syncViewerState() {
         this.syncItems();
-        this.syncSelections();
         this.syncFocus();
+        this.syncSelections();
     }
 
     componentDidMount() {
@@ -326,11 +327,15 @@ export default class MolstarViewer extends Component {
             }
             if (this.props.autoFocus) {
                 this.shouldAutoFocus = true;
+            } else {
+                this.shouldAutoFocus = false;
             }
             this.state.data = this.props.data || [];
-        } else if (this.props.selection !== prevProps.selection) {
+        }
+        if (this.props.selection !== prevProps.selection) {
             this.state.selection = this.props.selection;
-        } else if (this.props.focus !== prevProps.focus) {
+        }
+        if (this.props.focus !== prevProps.focus) {
             this.state.focus = this.props.focus;
         }
         this.syncViewerState();
