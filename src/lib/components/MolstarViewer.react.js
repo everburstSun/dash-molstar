@@ -1,9 +1,9 @@
 import React, { Component, createRef } from 'react';
 import PropTypes from 'prop-types';
-import _ from 'lodash';
+import { Vec3, Mat3 } from 'molstar/lib/mol-math/linear-algebra';
 import { changeCameraRotation, structureLayingTransform } from 'molstar/lib/mol-plugin-state/manager/focus-camera/orient-axes';
-import { set } from 'ramda';
-
+import { Structure } from 'molstar/lib/mol-model/structure/structure';
+import _ from 'lodash';
 
 /**
  * The Molstar viewer component for dash
@@ -45,7 +45,7 @@ export default class MolstarViewer extends Component {
             style: defaultStyle,
             className: props.className,
             selection: props.selection,
-            focus: props.focus,
+            //focus: props.focus,
         };
 
         this.shouldAutoFocus = false;
@@ -125,6 +125,25 @@ export default class MolstarViewer extends Component {
         }});
     }
 
+    autoRotate(structures) {
+        const { rotation } = structureLayingTransform(structures);
+        const x = Mat3.create(
+            Math.cos(Math.PI / 180 * 180),
+            Math.sin(Math.PI / 180 * 180),
+            0,
+            -Math.sin(Math.PI / 180 * 180),
+            Math.cos(Math.PI / 180 * 180),
+            0,
+            0,
+            0,
+            1,
+        );
+        const newViewMatrix = Mat3.mul(Mat3(), rotation, x);
+        const newSnapshot = changeCameraRotation(this.viewer._plugin.canvas3d.camera.getSnapshot(), newViewMatrix);
+        const durationMs = 10;
+        this.viewer._plugin.managers.camera.setSnapshot(newSnapshot, durationMs);
+    }
+
     syncStructure(label, item) {
         if (!this.loadedStructures[label]) {
             this.loadedStructures[label] = 1;
@@ -132,18 +151,18 @@ export default class MolstarViewer extends Component {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
                     this.loadedStructures[label] = 2;
                     item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                    //this.viewer.resetCamera();
+                    this.autoRotate([x.structure.data]);           
                     if (this.shouldAutoFocus) {
                         this.syncAutoFocus();
                         this.shouldAutoFocus = false;
-                    }
+                    }        
                 });
             } else if (item.type === "url") {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         this.loadedStructures[label] = 2;
                         item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                        //this.viewer.resetCamera();
+                        this.autoRotate([x.structure.data]);  
                         if (this.shouldAutoFocus) {
                             this.syncAutoFocus();
                             this.shouldAutoFocus = false;
@@ -152,6 +171,7 @@ export default class MolstarViewer extends Component {
                 } else {
                     this.viewer.loadSnapshotFromUrl(item.data, item.format).then((x) => {
                         this.loadedSnapshots[label] = x.snapshot.ref;
+                        this.autoRotate([x.structure.data]);
                         if (this.shouldAutoFocus) {
                             this.syncAutoFocus();
                             this.shouldAutoFocus = false;
@@ -214,6 +234,32 @@ export default class MolstarViewer extends Component {
         });
     }
 
+
+    getSelectionSubStructure(){
+        const structure = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.structure;
+        const elements = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.elements[0].unit.elements;
+        const indices = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.elements[0].indices;
+        const elementIds = indices.map(index => elements[index]);
+
+        const builder = Structure.Builder()
+        const elementSet = new Set(elementIds)
+        for (const unit of structure.units) {
+            const elements = elementIds
+            ? [...(unit.elements)].filter((item) => elementSet.has(item))
+            : unit.elements
+            if (elements.length) {
+            builder.addUnit(
+                unit.kind,
+                unit.model,
+                unit.conformation.operator,
+                elements,
+                unit.traits
+            )
+            }
+        }
+        return builder.getStructure()
+    }
+
     syncSelections() {
         const selection = this.state.selection;
         if (!selection) {
@@ -251,21 +297,17 @@ export default class MolstarViewer extends Component {
             }
         }
         this.viewer.select(targets, selection.mode, selection.modifier);
-        // TODO: fix the bug of camera rotation, we need pocket instead of whole structure
-        const structures = [this.viewer._plugin.managers.interactivity.lociSelects.sel.referenceLoci.structure];
-        const { rotation } = structureLayingTransform(structures);
-        const newSnapshot = changeCameraRotation(this.viewer._plugin.canvas3d.camera.getSnapshot(), rotation);
-        const durationMs = 10;
-        this.viewer._plugin.managers.camera.setSnapshot(newSnapshot, durationMs);
+        const subStructure = this.getSelectionSubStructure();
+        this.autoRotate([subStructure]);
     }
 
     syncFocus() {
-        const focus = this.state.focus;
+        const focus = this.props.focus;
         if (!focus) {
             this.viewer.clearFocus();
             return;
         }
-        const molecule_name = this.state.focus?.molecule
+        const molecule_name = focus?.molecule
         if (!molecule_name) {
             return;
         }
@@ -324,17 +366,17 @@ export default class MolstarViewer extends Component {
     }
 
     componentDidUpdate(prevProps) {
+        if (this.props.autoFocus) {
+            this.shouldAutoFocus = this.state.focus === this.props.focus;
+        } else {
+            this.shouldAutoFocus = false;
+        }
         if (this.props.data !== prevProps.data) {
             const data = _.differenceWith(prevProps.data, this.props.data, _.isEqual);
             if (data && data.length) {
                 for (let d of data) {
                     d.label && this.viewer.removeComponent(d.label);
                 }
-            }
-            if (this.props.autoFocus) {
-                this.shouldAutoFocus = true;
-            } else {
-                this.shouldAutoFocus = false;
             }
             this.state.data = this.props.data || [];
             this.syncItems();
@@ -343,8 +385,7 @@ export default class MolstarViewer extends Component {
             this.state.selection = this.props.selection;
             this.syncSelections();
         }
-        if (this.props.focus !== prevProps.focus) {
-            this.state.focus = this.props.focus;
+        if (this.state.focus !== this.props.focus) {
             this.syncFocus();
         }
     }
@@ -355,10 +396,6 @@ export default class MolstarViewer extends Component {
             ref={this.viewerRef}
             style={this.state.style}
             className={this.state.className}
-            data={this.props.data}
-            layout={this.state.layout}
-            selection={this.props.selection}
-            focus={this.props.focus}
         />
         );
     }
@@ -367,7 +404,7 @@ export default class MolstarViewer extends Component {
 
 MolstarViewer.defaultProps = {
     data: [],
-    autoFocus: true,
+    autoFocus: false,
 };
 
 

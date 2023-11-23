@@ -20,7 +20,7 @@ app.layout = html.Div(
             sidebarDefaultSize=300,
             mainChildren=dash_molstar.MolstarViewer(
                 data=[],
-                autoFocus=True,
+                autoFocus=False,
                 id="viewer",
                 style={"width": "100%", "height": "100%"},
             ),
@@ -312,9 +312,12 @@ def load_ligand_original(n_clicks, data):
 def focus_ligand_original(n_clicks, data):
     if not n_clicks or len(ctx.triggered) > 1:
         raise PreventUpdate
+    found = False
     for d in data:
         if d.get("label", None) == "Ligand Original":
-            raise PreventUpdate
+            found = True
+    if not found:
+        raise PreventUpdate
     residue_all = molstar_helper.get_targets("UNL")
     return molstar_helper.get_focus(
         [residue_all], analyse=True, molecule="Ligand Original"
@@ -382,9 +385,12 @@ def remove_ligand_optimized(n_clicks, data):
 def focus_ligand_optimized(n_clicks, data):
     if not n_clicks or len(ctx.triggered) > 1:
         raise PreventUpdate
+    found = False
     for d in data:
         if d.get("label", None) == "Ligand Optimized":
-            raise PreventUpdate
+            found = True
+    if not found:
+        raise PreventUpdate
     residue_all = molstar_helper.get_targets("UNL")
     return molstar_helper.get_focus(
         [residue_all], analyse=True, molecule="Ligand Optimized"

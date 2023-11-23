@@ -1,6 +1,6 @@
 {
   "name": "dash_molstar",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "The molstar plugin for plotly dash framework",
   "repository": {
     "type": "git",

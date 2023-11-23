@@ -42,6 +42,18 @@
         "returns": null
       },
       {
+        "name": "autoRotate",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "structures",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
         "name": "syncStructure",
         "docblock": null,
         "modifiers": [],
@@ -71,6 +83,13 @@
             "type": null
           }
         ],
+        "returns": null
+      },
+      {
+        "name": "getSelectionSubStructure",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
         "returns": null
       },
       {
@@ -175,7 +194,7 @@
         "required": false,
         "description": "",
         "defaultValue": {
-          "value": "true",
+          "value": "false",
           "computed": false
         }
       }
