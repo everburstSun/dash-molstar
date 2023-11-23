@@ -11,6 +11,8 @@ This library can be easily installed with `pip`:
 pip install dash-molstar
 ```
 
+![](example.gif)
+
 ## Usage
 
 Import `dash_molstar` and then you can add it to your layout as you did to other components:
