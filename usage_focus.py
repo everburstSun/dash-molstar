@@ -1,5 +1,5 @@
 from dash import Dash, html, ALL, ctx, callback
-from dash import Input
+from dash import Input, Output
 from tests.molstar_test import (get_mol, get_mol_data_by_path)
 from pathlib import Path
 
@@ -7,6 +7,9 @@ import json
 import dash_mantine_components as dmc
 from dash.exceptions import PreventUpdate
 
+from tests.select import select_with_on_change
+
+select_placeholer, on_change = select_with_on_change()
 
 
 COMPARE_WITH_INPUT_LIGAND_KEY = "compare_with_input_ligand"
@@ -19,7 +22,8 @@ checkbox_styles = {
     }
 }
 
-current_pdb = "./tests/3d20_protein.pdb"
+# current_pdb = "./tests/3d20_protein.pdb"
+current_pdb = "./dash-example-protein.pdb"
 
 app = Dash(__name__)
 
@@ -51,6 +55,12 @@ app.layout = html.Div(
                 "height": 600
             },
             id="test-1"
+        ),
+        dmc.Button("Add Pockets", id="add-pockets", style={"margin": "16px"}),
+        dmc.Select(
+            data=[],
+            placeholder="Select a pocket",
+            id="select-test"
         ),
         html.Div(
             [
@@ -111,6 +121,51 @@ app.layout = html.Div(
 
 
 curent_checked_compare_ligands = []
+
+@callback(
+    # molstar_placeholder.get_output(component_property="data", allow_duplicate=True),
+    Output("select-test", "data"),
+    Input("add-pockets", "n_clicks"),
+    prevent_initial_call=True,
+)
+def handler_add_pockets(n_clicks):
+    if n_clicks is None:
+        raise PreventUpdate
+
+    import pandas
+    output = "dash-example-output/dash-example-protein.pdb_predictions.csv"
+    df = pandas.read_csv(output)
+    df = df.rename(columns=lambda x: x.strip())
+    data = df.to_dict("records")
+    options = [{"label": d["name"], "value": json.dumps(d)} for d in data]
+    return options
+
+
+@callback(
+    molstar_placeholder.get_output(component_property="selection", allow_duplicate=True),
+    Input("select-test", "value"),
+    prevent_initial_call=True,
+)
+def handler_select_test(value):
+    # if not data:
+    # print("这里的 data 是什么？", data)
+    from collections import defaultdict
+    from dash_molstar.utils import molstar_helper
+
+    # raise PreventUpdate
+    data = json.loads(value)
+    residue_ids = data["residue_ids"].strip().split()
+    targets = defaultdict(list)
+    selections = []
+    for residue_id in residue_ids:
+        chain_name, residue_number = residue_id.split("_")
+        targets[chain_name].append(residue_number)
+    for chain_name, residue_numbers in targets.items():
+        selections.append(
+            molstar_helper.get_targets(chain=chain_name, residue=residue_numbers)
+        )
+    return molstar_helper.get_selection(selections, rotate=True, select=True, add=False, molecule=Path(current_pdb).name)
+
 
 @callback(
     molstar_placeholder.get_output(component_property="data", allow_duplicate=True),

@@ -10,14 +10,12 @@ The Molstar viewer component for dash
 }
 
 \usage{
-molstarViewer(id=NULL, autoFocus=NULL, className=NULL, data=NULL,
-focus=NULL, layout=NULL, selection=NULL, style=NULL)
+molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, layout=NULL,
+selection=NULL, style=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
-
-\item{autoFocus}{Logical. }
 
 \item{className}{Character. The HTML property `class` for additional class names of the container of molstar viewer.}
 

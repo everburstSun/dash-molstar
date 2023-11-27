@@ -40,7 +40,7 @@ def get_chain_names(pdb_file):
 
 
 
-def parse_molecule(inp, fmt=None, component=None, name=None):
+def parse_molecule(inp, fmt=None, component=None, name=None, focus=False):
     """
     Parse the molecule for `data` parameter of molstar viewer.
 
@@ -96,7 +96,8 @@ def parse_molecule(inp, fmt=None, component=None, name=None):
         'label': name or get_uuid(),
         "type": 'mol',
         "data": data,
-        "format": fmt
+        "format": fmt,
+        "focus": focus,
     }
     if component: d['component'] = component
     return d
@@ -272,7 +273,7 @@ def create_component(label, targets, representation='cartoon'):
         'representation': r
     }
 
-def get_selection(targets, select=True, add=False, molecule=None):
+def get_selection(targets, select=True, add=False, molecule=None, rotate=False):
     """
     Select specific targets in the molstar viewer.
 
@@ -304,7 +305,8 @@ def get_selection(targets, select=True, add=False, molecule=None):
         'molecule': molecule,
         'targets': targets,
         'mode': mode,
-        'modifier': modifier
+        'modifier': modifier,
+        'rotate': rotate,
     }
 
 
