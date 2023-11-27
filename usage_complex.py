@@ -280,7 +280,7 @@ def select_pocket(value, data):
         selections.append(
             molstar_helper.get_targets(chain=chain_name, residue=residue_numbers)
         )
-    return molstar_helper.get_selection(selections, select=True, add=False, molecule="Target Protein")
+    return molstar_helper.get_selection(selections, rotate=True, select=True, add=False, molecule="Target Protein")
 
 
 @app.callback(

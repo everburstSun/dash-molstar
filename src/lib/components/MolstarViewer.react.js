@@ -48,7 +48,6 @@ export default class MolstarViewer extends Component {
             //focus: props.focus,
         };
 
-        this.shouldAutoFocus = false;
 
         this.loadedShapes = {};
         this.loadedStructures = {};
@@ -119,13 +118,16 @@ export default class MolstarViewer extends Component {
         };
     }
 
-    syncAutoFocus() {
-        this.props.setProps({ focus: {
+    syncAutoFocus(focus=false) {
+        focus && this.props.setProps({ focus: {
             molecule: this.state.data[this.state.data.length - 1]?.label
         }});
     }
 
-    autoRotate(structures) {
+    autoRotate(structures, rotate = false) {
+        if (!rotate) {
+            return;
+        }
         const { rotation } = structureLayingTransform(structures);
         const x = Mat3.create(
             Math.cos(Math.PI / 180 * 180),
@@ -151,31 +153,22 @@ export default class MolstarViewer extends Component {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
                     this.loadedStructures[label] = 2;
                     item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                    this.autoRotate([x.structure.data]);           
-                    if (this.shouldAutoFocus) {
-                        this.syncAutoFocus();
-                        this.shouldAutoFocus = false;
-                    }        
+                    this.autoRotate([x.structure.data]);
+                    this.syncAutoFocus(item.focus);
                 });
             } else if (item.type === "url") {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         this.loadedStructures[label] = 2;
                         item.hasOwnProperty('component') && this.syncComponent(label, item.component);
-                        this.autoRotate([x.structure.data]);  
-                        if (this.shouldAutoFocus) {
-                            this.syncAutoFocus();
-                            this.shouldAutoFocus = false;
-                        }
+                        this.autoRotate([x.structure.data]);
+                        this.syncAutoFocus(item.focus);
                     });
                 } else {
                     this.viewer.loadSnapshotFromUrl(item.data, item.format).then((x) => {
                         this.loadedSnapshots[label] = x.snapshot.ref;
                         this.autoRotate([x.structure.data]);
-                        if (this.shouldAutoFocus) {
-                            this.syncAutoFocus();
-                            this.shouldAutoFocus = false;
-                        }
+                        this.syncAutoFocus(item.focus);
                     });
                 }
             }
@@ -298,7 +291,7 @@ export default class MolstarViewer extends Component {
         }
         this.viewer.select(targets, selection.mode, selection.modifier);
         const subStructure = this.getSelectionSubStructure();
-        this.autoRotate([subStructure]);
+        this.autoRotate([subStructure], selection.rotate);
     }
 
     syncFocus() {
@@ -366,11 +359,6 @@ export default class MolstarViewer extends Component {
     }
 
     componentDidUpdate(prevProps) {
-        if (this.props.autoFocus) {
-            this.shouldAutoFocus = this.state.focus === this.props.focus;
-        } else {
-            this.shouldAutoFocus = false;
-        }
         if (this.props.data !== prevProps.data) {
             const data = _.differenceWith(prevProps.data, this.props.data, _.isEqual);
             if (data && data.length) {
@@ -386,6 +374,7 @@ export default class MolstarViewer extends Component {
             this.syncSelections();
         }
         if (this.state.focus !== this.props.focus) {
+            this.state.focus = this.props.focus;
             this.syncFocus();
         }
     }
@@ -404,7 +393,6 @@ export default class MolstarViewer extends Component {
 
 MolstarViewer.defaultProps = {
     data: [],
-    autoFocus: false,
 };
 
 
@@ -452,6 +440,4 @@ MolstarViewer.propTypes = {
      * to Dash, to make them available for callbacks.
      */
     setProps: PropTypes.func,
-
-    autoFocus: PropTypes.bool,
 };

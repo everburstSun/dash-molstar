@@ -1,9 +1,9 @@
 # AUTO GENERATED FILE - DO NOT EDIT
 
 #' @export
-molstarViewer <- function(id=NULL, autoFocus=NULL, className=NULL, data=NULL, focus=NULL, layout=NULL, selection=NULL, style=NULL) {
+molstarViewer <- function(id=NULL, className=NULL, data=NULL, focus=NULL, layout=NULL, selection=NULL, style=NULL) {
     
-    props <- list(id=id, autoFocus=autoFocus, className=className, data=data, focus=focus, layout=layout, selection=selection, style=style)
+    props <- list(id=id, className=className, data=data, focus=focus, layout=layout, selection=selection, style=style)
     if (length(props) > 0) {
         props <- props[!vapply(props, is.null, logical(1))]
     }
@@ -11,7 +11,7 @@ molstarViewer <- function(id=NULL, autoFocus=NULL, className=NULL, data=NULL, fo
         props = props,
         type = 'MolstarViewer',
         namespace = 'dash_molstar',
-        propNames = c('id', 'autoFocus', 'className', 'data', 'focus', 'layout', 'selection', 'style'),
+        propNames = c('id', 'className', 'data', 'focus', 'layout', 'selection', 'style'),
         package = 'dashMolstar'
         )
 

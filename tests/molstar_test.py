@@ -19,33 +19,21 @@ def get_mol_data_by_path(path: Union[Path, str]):
             for name in get_chain_names(str(p)):
                 targets.append(molstar_helper.get_targets(chain=name))
 
-            # ag = molstar_helper.create_component("All", targets, "molecular-surface")
+            ag = molstar_helper.create_component("All", targets, "molecular-surface")
             file_data.append(
                 molstar_helper.parse_molecule(
                     str(p),
-                    # component=[ag],
+                    component=[ag],
                     name=p.name
                 )
             )
         else:
-            # print(11111111, p.read_text())
-        
-            # suppl = SDMolSupplier(str(p))
-            # for mol in suppl:
-            #     print("这里的 p.name 是: ", p.name)
-            #     if mol is not None:
-            #         AllChem.Compute2DCoords(mol)
-            #         PDBBlock = AllChem.MolToPDBBlock(mol)
-            #         file_data.append(
-            #             molstar_helper.parse_molecule(PDBBlock, fmt="pdb", name=p.name)
-            #         )
-            
-
             file_data.append(
                 molstar_helper.parse_molecule(
                     p.read_text(),
                     fmt=p.suffix.replace(".", ""),
-                    name=p.name
+                    name=p.name,
+                    focus=True,
                 )
             )
     if not file_data:
@@ -56,7 +44,10 @@ def get_mol_data_by_path(path: Union[Path, str]):
 
 def get_mol(data: Union[List, Dict] = None, style: Dict = {"height": "100%"}):
     
-    molstar = Placeholder.create(dash_molstar.MolstarViewer(data=data, style=style, autoFocus=True))
+    molstar = Placeholder.create(dash_molstar.MolstarViewer(
+        data=data, style=style,
+        # autoFocus=True
+    ))
     
     
     def _add_mol(path: Union[Path, str]):

@@ -38,7 +38,12 @@
         "name": "syncAutoFocus",
         "docblock": null,
         "modifiers": [],
-        "params": [],
+        "params": [
+          {
+            "name": "focus",
+            "type": null
+          }
+        ],
         "returns": null
       },
       {
@@ -48,6 +53,10 @@
         "params": [
           {
             "name": "structures",
+            "type": null
+          },
+          {
+            "name": "rotate",
             "type": null
           }
         ],
@@ -186,17 +195,6 @@
         },
         "required": false,
         "description": "Dash-assigned callback that should be called to report property changes\nto Dash, to make them available for callbacks."
-      },
-      "autoFocus": {
-        "type": {
-          "name": "bool"
-        },
-        "required": false,
-        "description": "",
-        "defaultValue": {
-          "value": "false",
-          "computed": false
-        }
       }
     }
   }
