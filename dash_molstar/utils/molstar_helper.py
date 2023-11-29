@@ -98,8 +98,9 @@ def parse_molecule(inp, fmt=None, component=None, name=None, focus=False):
         "data": data,
         "format": fmt,
         "focus": focus,
+        "component": component,
     }
-    if component: d['component'] = component
+    # if component: d['component'] = component
     return d
 
 def parse_url(url, fmt=None, component=None, mol=True, name=None):

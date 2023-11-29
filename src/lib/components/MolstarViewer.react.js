@@ -152,7 +152,7 @@ export default class MolstarViewer extends Component {
             if (item.type === "mol") {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
                     this.loadedStructures[label] = 2;
-                    item.hasOwnProperty('component') && this.syncComponent(label, item.component);
+                    item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
                     this.autoRotate([x.structure.data]);
                     this.syncAutoFocus(item.focus);
                 });
@@ -160,7 +160,7 @@ export default class MolstarViewer extends Component {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         this.loadedStructures[label] = 2;
-                        item.hasOwnProperty('component') && this.syncComponent(label, item.component);
+                        item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
                         this.autoRotate([x.structure.data]);
                         this.syncAutoFocus(item.focus);
                     });
@@ -173,18 +173,30 @@ export default class MolstarViewer extends Component {
                 }
             }
         } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[label] === 2) {
-            item.hasOwnProperty('component') && this.syncComponent(label, item.component);
+            item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
         }
     }
 
 
-    syncComponent(label, components) {
+    syncComponent(label, components, prevComponents) {
         components = components || [];
         if (!Array.isArray(components)) {
             components = [components];
         }
-        const loadedComponents = this.loadedComponents[label] || [];
+        let loadedComponents = this.loadedComponents[label] || [];
+
+        if (prevComponents && prevComponents.length) {
+            const shouldBeRemovedComponents = _.differenceWith(prevComponents, components, _.isEqual) || [];
+            shouldBeRemovedComponents.forEach((component) => {
+                const componentLabel = `${label}.${component.hasOwnProperty('label') ? component.label : ''}`;
+                this.viewer.removeComponent(componentLabel);
+                if (loadedComponents.includes(componentLabel)) {
+                    loadedComponents = loadedComponents.filter((item) => item !== componentLabel);
+                }
+            });
+        }
         this.loadedComponents[label] = loadedComponents;
+
         const structure = this.getStructureByLabel(label);
         const id = structure.cell.obj.data.units[0].model.id;
         components.forEach((component) => {
@@ -211,7 +223,6 @@ export default class MolstarViewer extends Component {
                     }
                     targets.push(newTarget);
                 }
-
                 this.viewer.createComponent(componentLabel, targets, component.representation);
             }
             loadedComponents.push(componentLabel);
@@ -366,7 +377,19 @@ export default class MolstarViewer extends Component {
                     d.label && this.viewer.removeComponent(d.label);
                 }
             }
-            this.state.data = this.props.data || [];
+
+
+            const currentData = _.cloneDeep(this.props.data || []);
+            const prevData = prevProps.data || [];
+            currentData.forEach((current) => {
+                prevData.forEach((prev) => {
+                    if (current.label === prev.label) {
+                        current.prevComponent = prev.component;
+                    }
+                });
+            });
+
+            this.state.data = currentData || [];
             this.syncItems();
         }
         if (this.props.selection !== prevProps.selection) {

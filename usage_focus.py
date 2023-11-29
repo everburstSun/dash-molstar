@@ -13,6 +13,8 @@ select_placeholer, on_change = select_with_on_change()
 
 
 COMPARE_WITH_INPUT_LIGAND_KEY = "compare_with_input_ligand"
+HIDDEN_INPUT_PROTEIN_SURFACE = "hidden_input_protein_surface"
+
 checkbox_styles = {
     "input": {
         ":checked": {
@@ -44,7 +46,7 @@ options = [
 
 common_style = {"padding": "0 16px", "borderBottom": "1px solid #eee"}
 
-molstar_placeholder, add_mol = get_mol(data=get_mol_data_by_path([Path(current_pdb)]))
+molstar_placeholder, add_mol = get_mol(data=get_mol_data_by_path([Path(current_pdb)], True))
 
 app.layout = html.Div(
     [
@@ -57,6 +59,7 @@ app.layout = html.Div(
             id="test-1"
         ),
         dmc.Button("Add Pockets", id="add-pockets", style={"margin": "16px"}),
+        dmc.Button("Add Surface", id="add-surface", style={"margin": "16px"}),
         dmc.Select(
             data=[],
             placeholder="Select a pocket",
@@ -140,6 +143,22 @@ def handler_add_pockets(n_clicks):
     options = [{"label": d["name"], "value": json.dumps(d)} for d in data]
     return options
 
+tmp = True
+@callback(
+    molstar_placeholder.get_output(component_property="data", allow_duplicate=True),
+    Input("add-surface", "n_clicks"),
+    prevent_initial_call=True,
+)
+def handler_add_surface(n_clicks):
+    if n_clicks is None:
+        raise PreventUpdate
+    
+    # if n_clicks % 2 == 0:
+    #     return add_mol([current_pdb], False)
+    global tmp
+    tmp = not tmp
+    res = add_mol([current_pdb], tmp)
+    return res
 
 @callback(
     molstar_placeholder.get_output(component_property="selection", allow_duplicate=True),

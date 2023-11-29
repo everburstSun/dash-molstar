@@ -90,6 +90,10 @@
           {
             "name": "components",
             "type": null
+          },
+          {
+            "name": "prevComponents",
+            "type": null
           }
         ],
         "returns": null
