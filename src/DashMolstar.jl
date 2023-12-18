@@ -3,7 +3,7 @@ module DashMolstar
 using Dash
 
 const resources_path = realpath(joinpath( @__DIR__, "..", "deps"))
-const version = "1.2.13"
+const version = "1.2.14"
 
 include("jl/molstarviewer.jl")
 
