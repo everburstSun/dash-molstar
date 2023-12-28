@@ -28,6 +28,7 @@ checkbox_styles = {
 current_pdb = "./dash-example-protein.pdb"
 
 app = Dash(__name__)
+tmp = None
 
 ligand_file_json = None
 with open("./tests/outputs/result.vdgen.json", "r") as file:
@@ -46,7 +47,7 @@ options = [
 
 common_style = {"padding": "0 16px", "borderBottom": "1px solid #eee"}
 
-molstar_placeholder, add_mol = get_mol(data=get_mol_data_by_path([Path(current_pdb)], True))
+molstar_placeholder, add_mol = get_mol(data=get_mol_data_by_path([Path(current_pdb)], False))
 
 app.layout = html.Div(
     [
@@ -60,6 +61,7 @@ app.layout = html.Div(
         ),
         dmc.Button("Add Pockets", id="add-pockets", style={"margin": "16px"}),
         dmc.Button("Add Surface", id="add-surface", style={"margin": "16px"}),
+        dmc.Button("Show PDB", id="show-pdb", style={"margin": "16px"}),
         dmc.Select(
             data=[],
             placeholder="Select a pocket",
@@ -143,7 +145,23 @@ def handler_add_pockets(n_clicks):
     options = [{"label": d["name"], "value": json.dumps(d)} for d in data]
     return options
 
-tmp = True
+show = True
+@callback(
+    molstar_placeholder.get_output(component_property="data", allow_duplicate=True),
+    Input("show-pdb", "n_clicks"),
+    prevent_initial_call=True,
+)
+def handler_add_surface(n_clicks):
+    if n_clicks is None:
+        raise PreventUpdate
+
+    # if n_clicks % 2 == 0:
+    #     return add_mol([current_pdb], False)
+    global show
+    show = not show
+    return add_mol([current_pdb], False) if show else add_mol([], False)
+
+
 @callback(
     molstar_placeholder.get_output(component_property="data", allow_duplicate=True),
     Input("add-surface", "n_clicks"),
@@ -152,7 +170,7 @@ tmp = True
 def handler_add_surface(n_clicks):
     if n_clicks is None:
         raise PreventUpdate
-    
+
     # if n_clicks % 2 == 0:
     #     return add_mol([current_pdb], False)
     global tmp

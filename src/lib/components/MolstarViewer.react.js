@@ -4,6 +4,29 @@ import { Vec3, Mat3 } from 'molstar/lib/mol-math/linear-algebra';
 import { changeCameraRotation, structureLayingTransform } from 'molstar/lib/mol-plugin-state/manager/focus-camera/orient-axes';
 import { Structure } from 'molstar/lib/mol-model/structure/structure';
 import _ from 'lodash';
+import { ColorNames } from 'molstar/lib/mol-util/color/names';
+
+
+const isMobile = {
+    Android: function() {
+        return navigator.userAgent.match(/Android/i);
+    },
+    BlackBerry: function() {
+        return navigator.userAgent.match(/BlackBerry/i);
+    },
+    iOS: function() {
+        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+    },
+    Opera: function() {
+        return navigator.userAgent.match(/Opera Mini/i);
+    },
+    Windows: function() {
+        return navigator.userAgent.match(/IEMobile/i) || navigator.userAgent.match(/WPDesktop/i);
+    },
+    any: function() {
+        return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+    }
+  };
 
 /**
  * The Molstar viewer component for dash
@@ -150,8 +173,34 @@ export default class MolstarViewer extends Component {
         if (!this.loadedStructures[label]) {
             this.loadedStructures[label] = 1;
             if (item.type === "mol") {
-                this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
+                this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label} }).then((x) => {
                     this.loadedStructures[label] = 2;
+                    const res = x.representation;
+
+                    const sphere = res.components.ligand? res.components.ligand.data.boundary.sphere: null;
+                    if (res.representations.polymer){
+                        const cell = res.representations.polymer.cell;
+                        const ismobile = isMobile.any();
+                        this.viewer.plugin.state.data.build().to(cell.transform.ref).update({
+                            ...cell.params?.values,
+                            type: {
+                                name: cell.params?.values.type.name,
+                                params: {
+                                    ...cell.params?.values.type.params,
+                                    alpha: (ismobile? 1.0: 0.90),
+                                },
+                            },
+                            colorTheme: {
+                                name: 'uniform',
+                                params: {
+                                   value: ColorNames.forestgreen,
+                                },
+                            },
+                        }).commit();
+                    }
+                    if (sphere){
+                        this.viewer.plugin.managers.camera.focusSphere(sphere);
+                    }
                     item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
                     this.autoRotate([x.structure.data]);
                     this.syncAutoFocus(item.focus);
@@ -159,6 +208,32 @@ export default class MolstarViewer extends Component {
             } else if (item.type === "url") {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
+                        const res = x.representation;
+                        const sphere = res.components.ligand? res.components.ligand.data.boundary.sphere: null;
+                        if (res.representations.polymer){
+                            const cell = res.representations.polymer.cell;
+                            const ismobile = isMobile.any();
+                            this.viewer.plugin.state.data.build().to(cell.transform.ref).update({
+                                ...cell.params?.values,
+                                type: {
+                                    name: cell.params?.values.type.name,
+                                    params: {
+                                        ...cell.params?.values.type.params,
+                                        alpha: (ismobile? 1.0: 0.90),
+                                    },
+                                },
+                                colorTheme: {
+                                    name: 'uniform',
+                                    params: {
+                                       value: ColorNames.forestgreen,
+                                    },
+                                },
+                            }).commit();
+                        }
+
+                        if (sphere){
+                            this.viewer.plugin.managers.camera.focusSphere(sphere);
+                        }
                         this.loadedStructures[label] = 2;
                         item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
                         this.autoRotate([x.structure.data]);
@@ -172,11 +247,11 @@ export default class MolstarViewer extends Component {
                     });
                 }
             }
+
         } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[label] === 2) {
             item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
         }
     }
-
 
     syncComponent(label, components, prevComponents) {
         components = components || [];
