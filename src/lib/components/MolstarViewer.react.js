@@ -5,28 +5,29 @@ import { changeCameraRotation, structureLayingTransform } from 'molstar/lib/mol-
 import { Structure } from 'molstar/lib/mol-model/structure/structure';
 import _ from 'lodash';
 import { ColorNames } from 'molstar/lib/mol-util/color/names';
+import { Color } from 'molstar/lib/mol-util/color';
 
 
 const isMobile = {
-    Android: function() {
+    Android: function () {
         return navigator.userAgent.match(/Android/i);
     },
-    BlackBerry: function() {
+    BlackBerry: function () {
         return navigator.userAgent.match(/BlackBerry/i);
     },
-    iOS: function() {
+    iOS: function () {
         return navigator.userAgent.match(/iPhone|iPad|iPod/i);
     },
-    Opera: function() {
+    Opera: function () {
         return navigator.userAgent.match(/Opera Mini/i);
     },
-    Windows: function() {
+    Windows: function () {
         return navigator.userAgent.match(/IEMobile/i) || navigator.userAgent.match(/WPDesktop/i);
     },
-    any: function() {
+    any: function () {
         return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
     }
-  };
+};
 
 /**
  * The Molstar viewer component for dash
@@ -112,17 +113,20 @@ export default class MolstarViewer extends Component {
         let newLabels = [];
         structureItems.forEach((item) => {
             const label = item.hasOwnProperty('label') ? item.label : '';
-            newLabels.push(label);
+            item.label = label;
+            const skey = this.genKey(item);
+            newLabels.push(skey);
             this.syncStructure(label, item);
         });
-        for (const [label, ref] of Object.entries(this.loadedStructures)) {
-            if (!newLabels.includes(label)) {
-                delete this.loadedComponents[label];
+        for (const [skey, ref] of Object.entries(this.loadedStructures)) {
+            const label = skey.split('^')[0];
+            if (!newLabels.includes(skey)) {
+                delete this.loadedComponents[skey];
                 this.getStructuresByLabel(label).forEach((structure) => {
 
                     this.viewer.removeRef(structure.cell.sourceRef);
                 });
-                delete this.loadedStructures[label];
+                delete this.loadedStructures[skey];
             }
         };
 
@@ -141,10 +145,12 @@ export default class MolstarViewer extends Component {
         };
     }
 
-    syncAutoFocus(focus=false) {
-        focus && this.props.setProps({ focus: {
-            molecule: this.state.data[this.state.data.length - 1]?.label
-        }});
+    syncAutoFocus(focus = false) {
+        focus && this.props.setProps({
+            focus: {
+                molecule: this.state.data[this.state.data.length - 1]?.label
+            }
+        });
     }
 
     autoRotate(structures, rotate = false) {
@@ -169,61 +175,50 @@ export default class MolstarViewer extends Component {
         this.viewer._plugin.managers.camera.setSnapshot(newSnapshot, durationMs);
     }
 
+    genKey(item) {
+        return `${item.label}^${item.add_surface}^${item.surface_alpha}^${item.surface_color}`
+    }
+
     syncStructure(label, item) {
-        if (!this.loadedStructures[label]) {
-            this.loadedStructures[label] = 1;
+        const skey = this.genKey(item)
+        if (!this.loadedStructures[skey]) {
+            this.loadedStructures[skey] = 1;
             if (item.type === "mol") {
-                this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label} }).then((x) => {
-                    this.loadedStructures[label] = 2;
-                    window.viewer = this.viewer;
-                    window.x = x;
-                    //const structure = x.structure;
-                    //const polymer = structure.select({ 'entity.type': 'polymer' });
-                    //const polymerRepresentations = this.viewer.plugin.structureComponent.representations;
-                    //polymerRepresentations.addRepresentation(polymer, { type: 'surface' });
-
-                    // for (const s of this._plugin.managers.structure.hierarchy.current.structures) {
-                    //     for (const c of s.components) {
-                    //         const isHidden = c.cell.state.isHidden === true || !this.customState.showLabels;
-                    //         await this._plugin.builders.structure.representation.addRepresentation(c.cell, { 
-                    //             type: 'label', color: 'uniform', colorParams: { value: ColorNames.black },
-                    //             typeParams: { level: 'element', fontQuality: 4, borderWidth: 0.1, borderColor: ColorNames.lightgray, attachment: 'bottom-left', ignoreHydrogens: this.customState.ignoreHydrogens } 
-                    //         }, { initialState: { isHidden } });
-                    //     }
-                    //}
-
-
-
+                this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label } }).then((x) => {
+                    this.loadedStructures[skey] = 2;
                     const res = x.representation;
-
-                    const sphere = res.components.ligand? res.components.ligand.data.boundary.sphere: null;
-                    if (res.representations.polymer){
+                    const sphere = res.components.ligand ? res.components.ligand.data.boundary.sphere : null;
+                    if (res.representations.polymer) {
                         const ismobile = isMobile.any();
+                        res.representations.polymer.visible = false;
                         const cell = res.representations.polymer.cell;
-                        viewer.plugin.builders.structure.representation.addRepresentation(cell, {
-                            type: 'molecular-surface', //molecular-surface could be probably better, but is slower
-                            color: 'uniform', colorParams: {value: ColorNames.forestgreen},
-                            ref: "polymer_surface",
-                            typeParams: {alpha: (ismobile? 1.0: 0.90)}
-                        });
+                       
                         this.viewer.plugin.state.data.build().to(cell.transform.ref).update({
                             ...cell.params?.values,
                             type: {
                                 name: cell.params?.values.type.name,
                                 params: {
                                     ...cell.params?.values.type.params,
-                                    alpha: (ismobile? 1.0: 0.90),
+                                    alpha: (ismobile ? 1.0 : item.alpha),
                                 },
                             },
                             colorTheme: {
-                                name: 'uniform',
-                                params: {
-                                   value: ColorNames.forestgreen,
-                                },
+                                "name": "polymer-id",
+                                "params": {
+                                    "list": "RedYellowBlue"
+                                }
                             },
                         }).commit();
+                        if (item.add_surface) {
+                            this.viewer.plugin.builders.structure.representation.addRepresentation(cell, {
+                                type: 'molecular-surface',
+                                color: 'uniform', colorParams: { value: item.surface_color?Color.fromHexStyle(item.surface_color): ColorNames.purple},
+                                ref: "polymer_surface",
+                                typeParams: { alpha: (ismobile ? 1.0 : item.surface_alpha) }
+                            });
+                        }
                     }
-                    if (sphere){
+                    if (sphere) {
                         this.viewer.plugin.managers.camera.focusSphere(sphere);
                     }
                     item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
@@ -234,32 +229,40 @@ export default class MolstarViewer extends Component {
                 if (item.urlfor === 'mol') {
                     this.viewer.loadStructureFromUrl(item.data, item.format, false).then((x) => {
                         const res = x.representation;
-                        const sphere = res.components.ligand? res.components.ligand.data.boundary.sphere: null;
-                        if (res.representations.polymer){
-                            const cell = res.representations.polymer.cell;
+                        const sphere = res.components.ligand ? res.components.ligand.data.boundary.sphere : null;
+                        if (res.representations.polymer) {
                             const ismobile = isMobile.any();
+                            res.representations.polymer.visible = false;
+                            const cell = res.representations.polymer.cell;
+                           
                             this.viewer.plugin.state.data.build().to(cell.transform.ref).update({
                                 ...cell.params?.values,
                                 type: {
                                     name: cell.params?.values.type.name,
                                     params: {
                                         ...cell.params?.values.type.params,
-                                        alpha: (ismobile? 1.0: 0.90),
+                                        alpha: (ismobile ? 1.0 : item.alpha),
                                     },
                                 },
                                 colorTheme: {
-                                    name: 'uniform',
-                                    params: {
-                                       value: ColorNames.forestgreen,
-                                    },
+                                    "name": "polymer-id",
+                                    "params": {
+                                        "list": "RedYellowBlue"
+                                    }
                                 },
                             }).commit();
+                            if (item.add_surface) {
+                                this.viewer.plugin.builders.structure.representation.addRepresentation(cell, {
+                                    type: 'molecular-surface',
+                                    color: 'uniform', colorParams: { value: item.surface_color?Color.fromHexStyle(item.surface_color): ColorNames.purple},
+                                    ref: "polymer_surface",
+                                    typeParams: { alpha: (ismobile ? 1.0 : item.surface_alpha) }
+                                });
+                            }
                         }
-
-                        if (sphere){
+                        if (sphere) {
                             this.viewer.plugin.managers.camera.focusSphere(sphere);
                         }
-                        this.loadedStructures[label] = 2;
                         item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
                         this.autoRotate([x.structure.data]);
                         this.syncAutoFocus(item.focus);
@@ -273,7 +276,7 @@ export default class MolstarViewer extends Component {
                 }
             }
 
-        } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[label] === 2) {
+        } if ((item.type === "mol" || (item.type === 'url' && item.urlfor === 'mol')) && this.loadedStructures[skey] === 2) {
             item.hasOwnProperty('component') && this.syncComponent(label, item.component, item.prevComponent);
         }
     }
@@ -339,7 +342,7 @@ export default class MolstarViewer extends Component {
     }
 
 
-    getSelectionSubStructure(){
+    getSelectionSubStructure() {
         const structure = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.structure;
         const elements = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.elements[0].unit.elements;
         const indices = this.viewer._plugin.managers.structure.selection.entries.values().next().value._selection.elements[0].indices;
@@ -349,16 +352,16 @@ export default class MolstarViewer extends Component {
         const elementSet = new Set(elementIds)
         for (const unit of structure.units) {
             const elements = elementIds
-            ? [...(unit.elements)].filter((item) => elementSet.has(item))
-            : unit.elements
+                ? [...(unit.elements)].filter((item) => elementSet.has(item))
+                : unit.elements
             if (elements.length) {
-            builder.addUnit(
-                unit.kind,
-                unit.model,
-                unit.conformation.operator,
-                elements,
-                unit.traits
-            )
+                builder.addUnit(
+                    unit.kind,
+                    unit.model,
+                    unit.conformation.operator,
+                    elements,
+                    unit.traits
+                )
             }
         }
         return builder.getStructure()

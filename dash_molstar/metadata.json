@@ -63,6 +63,18 @@
         "returns": null
       },
       {
+        "name": "genKey",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "item",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
         "name": "syncStructure",
         "docblock": null,
         "modifiers": [],

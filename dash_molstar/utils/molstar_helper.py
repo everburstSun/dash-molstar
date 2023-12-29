@@ -40,7 +40,9 @@ def get_chain_names(pdb_file):
 
 
 
-def parse_molecule(inp, fmt=None, component=None, name=None, focus=False):
+def parse_molecule(inp, fmt=None, component=None, name=None, focus=False,
+                   alpha=1.0,
+                   add_surface=False, surface_color=None, surface_alpha=1.0):
     """
     Parse the molecule for `data` parameter of molstar viewer.
 
@@ -99,11 +101,17 @@ def parse_molecule(inp, fmt=None, component=None, name=None, focus=False):
         "format": fmt,
         "focus": focus,
         "component": component,
+        "alpha": alpha,
+        "add_surface": add_surface,
+        "surface_color": surface_color,
+        "surface_alpha": surface_alpha,
     }
     # if component: d['component'] = component
     return d
 
-def parse_url(url, fmt=None, component=None, mol=True, name=None):
+def parse_url(url, fmt=None, component=None, mol=True, name=None,
+              alpha=1.0,
+              add_surface=False, surface_color=None, surface_alpha=1.0):
     """
     Parse the URL for `data` parameter of molstar viewer. 
     The url can be either a structure and a molstar state/session file.
@@ -150,7 +158,11 @@ def parse_url(url, fmt=None, component=None, mol=True, name=None):
         "type": 'url',
         "urlfor": 'mol' if mol else 'snapshot',
         "data": url,
-        "format": fmt
+        "format": fmt,
+        "alpha": alpha,
+        "add_surface": add_surface,
+        "surface_color": surface_color,
+        "surface_alpha": surface_alpha,
     }
     if component: d['component'] = component
     return d

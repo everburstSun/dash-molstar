@@ -282,9 +282,10 @@ def get_mol_data_by_path(path: Union[Path, str], surface: bool = True):
             file_data.append(
                 molstar_helper.parse_molecule(
                     str(p),
-                    component=[ag] if surface else [],
+                    #component=[ag] if surface else [],
                     name=p.name,
                     focus=True,
+                    add_surface=surface
                 )
                 # if surface
                 # else molstar_helper.parse_molecule(
@@ -360,15 +361,22 @@ def render_mol_with_path(
     if path.exists():
         file_data = None
         if path.suffix == ".pdb":
-            targets = []
-            for name in get_chain_names(str(path)):
-                targets.append(molstar_helper.get_targets(chain=name))
+            # targets = []
+            # for name in get_chain_names(str(path)):
+            #     targets.append(molstar_helper.get_targets(chain=name))
 
-            ag = molstar_helper.create_component("All", targets, "molecular-surface")
+            # ag = molstar_helper.create_component("All", targets, "molecular-surface")
+            # file_data = molstar_helper.parse_molecule(
+            #     str(path),
+            #     component=[ag],
+            #     # name=path.name
+            # )
             file_data = molstar_helper.parse_molecule(
-                str(path),
-                component=[ag],
+                path.read_text(),
+                fmt=path.suffix.replace(".", ""),
                 # name=path.name
+                add_surface=True,
+                
             )
         else:
             file_data = molstar_helper.parse_molecule(
@@ -400,6 +408,7 @@ def render_mol_with_multi_path(
                 molstar_helper.parse_molecule(
                     str(p),
                     component=[ag],
+                    add_surface=True,
                     #   name=p.name
                 )
             )
