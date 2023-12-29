@@ -175,12 +175,37 @@ export default class MolstarViewer extends Component {
             if (item.type === "mol") {
                 this.viewer.loadStructureFromData(item.data, item.format, false, { props: { dataLabel: label} }).then((x) => {
                     this.loadedStructures[label] = 2;
+                    window.viewer = this.viewer;
+                    window.x = x;
+                    //const structure = x.structure;
+                    //const polymer = structure.select({ 'entity.type': 'polymer' });
+                    //const polymerRepresentations = this.viewer.plugin.structureComponent.representations;
+                    //polymerRepresentations.addRepresentation(polymer, { type: 'surface' });
+
+                    // for (const s of this._plugin.managers.structure.hierarchy.current.structures) {
+                    //     for (const c of s.components) {
+                    //         const isHidden = c.cell.state.isHidden === true || !this.customState.showLabels;
+                    //         await this._plugin.builders.structure.representation.addRepresentation(c.cell, { 
+                    //             type: 'label', color: 'uniform', colorParams: { value: ColorNames.black },
+                    //             typeParams: { level: 'element', fontQuality: 4, borderWidth: 0.1, borderColor: ColorNames.lightgray, attachment: 'bottom-left', ignoreHydrogens: this.customState.ignoreHydrogens } 
+                    //         }, { initialState: { isHidden } });
+                    //     }
+                    //}
+
+
+
                     const res = x.representation;
 
                     const sphere = res.components.ligand? res.components.ligand.data.boundary.sphere: null;
                     if (res.representations.polymer){
-                        const cell = res.representations.polymer.cell;
                         const ismobile = isMobile.any();
+                        const cell = res.representations.polymer.cell;
+                        viewer.plugin.builders.structure.representation.addRepresentation(cell, {
+                            type: 'molecular-surface', //molecular-surface could be probably better, but is slower
+                            color: 'uniform', colorParams: {value: ColorNames.forestgreen},
+                            ref: "polymer_surface",
+                            typeParams: {alpha: (ismobile? 1.0: 0.90)}
+                        });
                         this.viewer.plugin.state.data.build().to(cell.transform.ref).update({
                             ...cell.params?.values,
                             type: {
