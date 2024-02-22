@@ -1,5 +1,9 @@
 # dash-molstar Changelog
 
+## [1.1.2] - 2024-02-22
+### Bug fixes
+- Fixed the problem when loading multiple structures with components.
+
 ## [1.1.1] - 2023-09-30
 ### Bug fixes
 - Fixed the problem when selected only one target, the plugin would fail.
