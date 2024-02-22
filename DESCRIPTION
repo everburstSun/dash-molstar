@@ -1,6 +1,6 @@
 Package: dashMolstar
 Title: The molstar plugin for plotly dash framework
-Version: 1.1.1
+Version: 1.1.2
 Description: The molstar plugin for plotly dash framework
 Depends: R (>= 3.0.2)
 Imports: 
