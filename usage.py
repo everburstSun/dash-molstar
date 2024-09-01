@@ -51,18 +51,20 @@ app.layout = html.Div([
           prevent_initial_call=True)
 def load_protein(yes, yess, yesss):
     if not ctx.triggered_id == 'load_protein_url':
-        CDRs = [
-            # CDRs on heavy chain
-            molstar_helper.get_targets(chain="H", residue=[24,25,26,27,28,29,30,31,49,50,51,52,53,54,55,56,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109]),
-            # CDRs on light chain
-            molstar_helper.get_targets(chain="L", residue=[24,25,26,27,45,46,47,84,85,86,87,88])
-        ]
-        cdrs = molstar_helper.create_component("CDRs", CDRs, 'orientation')
-        ag = molstar_helper.create_component("Antigen", molstar_helper.get_targets(chain="G"), 'molecular-surface')
         component = None
         if ctx.triggered_id == 'load_protein_rep':
+            # select the targets
+            CDRs = [
+                # CDRs on heavy chain
+                molstar_helper.get_targets(chain="H", residue=[24,25,26,27,28,29,30,31,49,50,51,52,53,54,55,56,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109]),
+                # CDRs on light chain
+                molstar_helper.get_targets(chain="L", residue=[24,25,26,27,45,46,47,84,85,86,87,88])
+            ]
+            # create the components
+            cdrs = molstar_helper.create_component("CDRs", CDRs, 'orientation')
+            ag = molstar_helper.create_component("Antigen", molstar_helper.get_targets(chain="G"), 'molecular-surface')
             component=[ag,cdrs]
-        data = molstar_helper.parse_molecule('3u7y.pdb',component=component)
+        data = molstar_helper.parse_molecule('3u7y.pdb', component=component, preset={'kind': 'empty'})
     else:
         data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.pdb')
     return data

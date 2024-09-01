@@ -95,7 +95,7 @@ export default class MolstarViewer extends Component {
         if (model_index >= 0) {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
             const targets = [];
-            if (selection.targets) {
+            if (selection.targets && selection.targets[0] !== null) {
                 // convert data from python to molstar data structure
                 for (let target of selection.targets) {
                     const newTarget = {
@@ -122,7 +122,7 @@ export default class MolstarViewer extends Component {
         if (model_index >= 0) {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
             const targets = [];
-            if (focus.targets) {
+            if (focus.targets && focus.targets[0] !== null) {
                 // convert data from python to molstar data structure
                 for (let target of focus.targets) {
                     const newTarget = {
@@ -148,7 +148,7 @@ export default class MolstarViewer extends Component {
         if (typeof data === "object") {
             if (data.type === "mol") {
                 // first load the structure into viewer
-                this.viewer.loadStructureFromData(data.data, data.format, false).then(() => {
+                this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset}).then(() => {
                     // if user specified component(s), add them to the structure
                     if (data.hasOwnProperty('component')) {
                         this.handleComponentChange(data.component);
@@ -157,7 +157,7 @@ export default class MolstarViewer extends Component {
             } else if (data.type === 'url') {
                 // load url for molecules
                 if (data.urlfor === 'mol') {
-                    this.viewer.loadStructureFromUrl(data.data, data.format, false).then(() => {
+                    this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset}).then(() => {
                         if (data.hasOwnProperty('component')) {
                             this.handleComponentChange(data.component);
                         }
@@ -183,7 +183,7 @@ export default class MolstarViewer extends Component {
             this.loadedShapes[data.label] = ref;
         });
         // } else if (data.shape === 'sphere') {
-        //     this.viewer.createSphere(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
+        //     this.viewer.createSphere(data.label, data.center, data.radius, data.color).then((ref) => {
         //     this.loadedShapes[data.label] = ref;
         }//);
     }
@@ -198,11 +198,11 @@ export default class MolstarViewer extends Component {
             for (let target of component.targets) {
                 const newTarget = {
                     modelId: id,
-                    ...target.author ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
+                    ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
                 }
                 // check if any residue number has been selected
                 if (target.hasOwnProperty('residue_numbers')) {
-                    if (target.author) {
+                    if (target.auth) {
                         newTarget.authSeqId = target.residue_numbers;
                     } else {
                         newTarget.labelSeqId = target.residue_numbers;

@@ -3,7 +3,7 @@ import os
 from urllib.parse import urlparse
 
 
-def parse_molecule(inp, fmt=None, component=None):
+def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
     """
     Parse the molecule for `data` parameter of molstar viewer.
 
@@ -22,6 +22,8 @@ def parse_molecule(inp, fmt=None, component=None):
         If not specified, molstar will use its default settings. (default: `None`)
 
         Use helper function `create_component` to generate correct data for this parameter.
+    `preset` — dict (optional)
+        The preset for molstar of how to display the loaded structure file.
 
     Returns
     -------
@@ -57,15 +59,17 @@ def parse_molecule(inp, fmt=None, component=None):
     d = {
         "type": 'mol',
         "data": data,
-        "format": fmt
+        "format": fmt,
+        "preset": preset
     }
     if component: d['component'] = component
     return d
 
-def parse_url(url, fmt=None, component=None, mol=True):
+def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'}):
     """
     Parse the URL for `data` parameter of molstar viewer. 
-    The url can be either a structure and a molstar state/session file.
+    The url can be either a structure or a molstar state/session file. If a state/session
+    was provided, the `mol` parameter should be set to `False`.
 
     Parameters
     ----------
@@ -85,6 +89,8 @@ def parse_url(url, fmt=None, component=None, mol=True):
     `mol` — bool (optional)
         If the url is a structure file, set `mol=True`.
         If the url is a molstar state or session file, set `mol=False`.
+    `preset` — dict (optional)
+        The preset for molstar of how to display the loaded structure file.
 
     Returns
     -------
@@ -108,10 +114,15 @@ def parse_url(url, fmt=None, component=None, mol=True):
         "type": 'url',
         "urlfor": 'mol' if mol else 'snapshot',
         "data": url,
-        "format": fmt
+        "format": fmt,
+        "preset": preset
     }
     if component: d['component'] = component
     return d
+
+def parse_trajectory(inp, fmt=None):
+    
+    pass
 
 def get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red'):
     """
@@ -175,7 +186,7 @@ def get_targets(chain, residue=None, auth=False):
         Selected residues
     """
     target = {'chain_name': chain, 'auth': auth}
-    if residue:
+    if residue is not None:
         if type(residue) != list: residue = [residue]
         residues = []
         for res in residue:
@@ -184,8 +195,8 @@ def get_targets(chain, residue=None, auth=False):
                 try:
                     num = eval(res)
                     residues.append(num)
-                except SyntaxError:
-                    residues.append(res)
+                except:
+                    pass
         target['residue_numbers'] = residues
     return target
 

@@ -1,5 +1,14 @@
 # dash-molstar Changelog
 
+## [1.2.0] - 
+### Added
+- Loading trajectories now supported
+- Loading structures without default representation
+- Fully customizable component representations
+- Showing assembly when loading structures
+- Drawing spheres on the stage
+- Allowing transparency on shapes
+
 ## [1.1.1] - 2023-09-30
 ### Bug fixes
 - Fixed the problem when selected only one target, the plugin would fail.
