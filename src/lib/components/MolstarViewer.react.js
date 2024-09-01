@@ -146,24 +146,47 @@ export default class MolstarViewer extends Component {
     }
     loadData(data) {
         if (typeof data === "object") {
-            if (data.type === "mol") {
-                // first load the structure into viewer
-                this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset}).then(() => {
+            if (data.type === "mol") { // loading a structure
+                const model_index = Object.keys(this.loadedStructures).length + 1;
+                this.loadedStructures[model_index] = null;
+                this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset}).then((result) => {
+                    // add the structure ID to this.loadedStructures
+                    this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
                     if (data.hasOwnProperty('component')) {
+                        // binding structure ID to component
+                        if (Array.isArray(data.component)) {
+                            data.component.forEach((component) => {
+                                component.modelId = this.loadedStructures[model_index];
+                            });
+                        } else if (typeof data.component === "object") {
+                            data.component.modelId = this.loadedStructures[model_index];
+                        }
+                        console.log(data.component)
                         this.handleComponentChange(data.component);
                     }
                 });
-            } else if (data.type === 'url') {
+            } else if (data.type === 'url') { // loading a URL
                 // load url for molecules
-                if (data.urlfor === 'mol') {
-                    this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset}).then(() => {
+                if (data.urlfor === 'mol') { // loading a structure from URL
+                    const model_index = Object.keys(this.loadedStructures).length + 1;
+                    this.loadedStructures[model_index] = null;
+                    this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset}).then((result) => {
+                        // add the structure ID to this.loadedStructures
+                        this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                         if (data.hasOwnProperty('component')) {
+                            // binding structure ID to component
+                            if (Array.isArray(data.component)) {
+                                data.component.forEach((component) => {
+                                    component.modelId = this.loadedStructures[model_index];
+                                });
+                            } else if (typeof data.component === "object") {
+                                data.component.modelId = this.loadedStructures[model_index];
+                            }
                             this.handleComponentChange(data.component);
                         }
                     });
-                } else {
-                    // load url for molstar snapshot file
+                } else { // load url for molstar snapshot file
                     this.viewer.loadSnapshotFromUrl(data.data, data.format);
                 }
             } else if (data.type === 'shape') {
@@ -188,30 +211,24 @@ export default class MolstarViewer extends Component {
         }//);
     }
     addComponent(component) {
-        // check if there was any structure loaded in the viewer
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            // get molstar internal structure ID for the last loaded model
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            // construct molstar target object from python helper data
-            const targets = [];
-            for (let target of component.targets) {
-                const newTarget = {
-                    modelId: id,
-                    ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-                }
-                // check if any residue number has been selected
-                if (target.hasOwnProperty('residue_numbers')) {
-                    if (target.auth) {
-                        newTarget.authSeqId = target.residue_numbers;
-                    } else {
-                        newTarget.labelSeqId = target.residue_numbers;
-                    }
-                }
-                targets.push(newTarget);
+        // construct molstar target object from python helper data
+        const targets = [];
+        for (let target of component.targets) {
+            const newTarget = {
+                modelId: component.modelId,
+                ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
             }
-            this.viewer.createComponent(component.label, targets, component.representation);
+            // check if any residue number has been selected
+            if (target.hasOwnProperty('residue_numbers')) {
+                if (target.auth) {
+                    newTarget.authSeqId = target.residue_numbers;
+                } else {
+                    newTarget.labelSeqId = target.residue_numbers;
+                }
+            }
+            targets.push(newTarget);
         }
+        this.viewer.createComponent(component.label, targets, component.representation);
     }
     componentDidMount() {
         if (this.viewerRef.current) {
