@@ -44,7 +44,7 @@ Parameters for `MolstarViewer` include `id`, `data`, `focus`, `layout`, `selecti
 
 ## Helper Functions
 
-### `parse_molecule(inp, fmt=None, component=None)`
+### `parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'})`
 This function takes in the path to a file or the contents of a file-like object as input, along with the format of the molecule (if not automatically determined from the file path) and an optional dictionary or list of dictionaries containing information about the components of the molecule to be created in molstar. The function returns a dictionary containing the parsed data that can be passed to molstar. If the format of the input file is not supported by molstar, a RuntimeError is raised. Each time the `data` parameter was updated with molecules, the canvas will be cleaned before loading any new structures.
 
 ### `parse_url(url, fmt=None, component=None, mol=True)`

@@ -52,6 +52,22 @@
         "returns": null
       },
       {
+        "name": "bindingComponentToMolecule",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "data",
+            "type": null
+          },
+          {
+            "name": "model_index",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
         "name": "loadData",
         "docblock": null,
         "modifiers": [],

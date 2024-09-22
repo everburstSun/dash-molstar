@@ -144,51 +144,58 @@ export default class MolstarViewer extends Component {
         }
         this.setState({focus: focus});
     }
+    bindingComponentToMolecule(data, model_index) {
+        // binding structure ID to component
+        if (Array.isArray(data.component)) {
+            data.component.forEach((component) => {
+                component.modelId = this.loadedStructures[model_index];
+            });
+        } else if (typeof data.component === "object") {
+            data.component.modelId = this.loadedStructures[model_index];
+        }
+    }
     loadData(data) {
         if (typeof data === "object") {
+            const model_index = Object.keys(this.loadedStructures).length + 1;
             if (data.type === "mol") { // loading a structure
-                const model_index = Object.keys(this.loadedStructures).length + 1;
-                this.loadedStructures[model_index] = null;
-                this.viewer.loadStructureFromData(data.data, data.format, false).then((result) => {
+                this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset})
+                .then((result) => {
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
                     if (data.hasOwnProperty('component')) {
-                        // binding structure ID to component
-                        if (Array.isArray(data.component)) {
-                            data.component.forEach((component) => {
-                                component.modelId = this.loadedStructures[model_index];
-                            });
-                        } else if (typeof data.component === "object") {
-                            data.component.modelId = this.loadedStructures[model_index];
-                        }
-                        console.log(data.component)
+                        this.bindingComponentToMolecule(data, model_index);
                         this.handleComponentChange(data.component);
                     }
                 });
             } else if (data.type === 'url') { // loading a URL
                 // load url for molecules
                 if (data.urlfor === 'mol') { // loading a structure from URL
-                    const model_index = Object.keys(this.loadedStructures).length + 1;
-                    this.loadedStructures[model_index] = null;
-                    this.viewer.loadStructureFromUrl(data.data, data.format, false).then((result) => {
+                    this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset})
+                    .then((result) => {
                         // add the structure ID to this.loadedStructures
                         this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
+                        // if user specified component(s), add them to the structure
                         if (data.hasOwnProperty('component')) {
-                            // binding structure ID to component
-                            if (Array.isArray(data.component)) {
-                                data.component.forEach((component) => {
-                                    component.modelId = this.loadedStructures[model_index];
-                                });
-                            } else if (typeof data.component === "object") {
-                                data.component.modelId = this.loadedStructures[model_index];
-                            }
+                            this.bindingComponentToMolecule(data, model_index);
                             this.handleComponentChange(data.component);
                         }
                     });
-                } else { // load url for molstar snapshot file
+                } else if (data.urlfor === 'snapshot') { // load url for molstar snapshot file
                     this.viewer.loadSnapshotFromUrl(data.data, data.format);
                 }
+            } else if (data.type === 'traj') {
+                const { topo, coords } = data;
+                this.viewer.loadTrajectory(topo, coords, {props: topo.preset})
+                .then((result) => {
+                    // add the structure ID to this.loadedStructures
+                    this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
+                    // if user specified component(s), add them to the structure
+                    if (data.hasOwnProperty('component')) {
+                        this.bindingComponentToMolecule(data, model_index);
+                        this.handleComponentChange(data.component);
+                    }
+                });
             } else if (data.type === 'shape') {
                 this.loadShape(data);
             }
@@ -202,13 +209,13 @@ export default class MolstarViewer extends Component {
         }
         // creating new shapes
         if (data.shape === 'box') {
-            this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
+            this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color, data.alpha).then((ref) => {
             this.loadedShapes[data.label] = ref;
         });
-        // } else if (data.shape === 'sphere') {
-        //     this.viewer.createSphere(data.label, data.min, data.max, data.radius, data.color).then((ref) => {
-        //     this.loadedShapes[data.label] = ref;
-        }//);
+        } else if (data.shape === 'sphere') {
+            this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail).then((ref) => {
+            this.loadedShapes[data.label] = ref;
+        })};
     }
     addComponent(component) {
         // construct molstar target object from python helper data
