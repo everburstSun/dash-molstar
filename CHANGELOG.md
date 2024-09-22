@@ -1,10 +1,11 @@
 # dash-molstar Changelog
 
-## [1.2.0] - 
+## [1.2.0] - 2024-09-23
 ### Added
 - Loading trajectories now supported
 - Loading structures without default representation
 - Fully customizable component representations
+- Import and export representation configurations as JSON file
 - Showing assembly when loading structures
 - Drawing spheres on the stage
 - Allowing transparency on shapes
