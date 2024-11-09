@@ -11,6 +11,5 @@ build:
 
 # Optionally set the version of Python and other tools you require
 python:
-  version: 3.9
   install:
     - requirements: docs/requirements.txt
