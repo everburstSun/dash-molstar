@@ -15,7 +15,6 @@ app.layout = html.Div([
             html.Button(id='load_protein', children="Load Protein", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
             html.Button(id='load_protein_rep', children="Load Protein With Component", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
             html.Button(id='load_protein_url', children="Load Protein From Internet", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
-            html.Button(id='load_traj', children="Load Trajectroy", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
         ], className='mx-auto')
     ]),
     dbc.Row([
@@ -65,13 +64,6 @@ def load_protein(yes, yess, yesss):
             # create the components
             cdr_rep = Representation(type='orientation')
             cdr_rep.set_type_params({'alpha': 0.5})
-            # cdr_rep = Representation(type='cartoon', color='element-symbol', size='physical')
-            # cdr_rep.set_color_params({
-            #         "carbonColor": cdr_rep.np("chain-id", {"palette": cdr_rep.np("generate", {"hue": [55, 180]}), 
-            #                                                "asymId": "label"})
-            #         })
-            # cdr_rep.set_size_params({'scale': 1.3})
-            # cdr_rep = Representation.from_config("/Volumes/ToshibaTBT/simon/Downloads/test.json")
             cdrs = molstar_helper.create_component("CDRs", CDRs, cdr_rep)
             ag_rep = Representation('molecular-surface')
             ag_rep.set_type_params({'xrayShaded': True})
@@ -80,15 +72,6 @@ def load_protein(yes, yess, yesss):
         data = molstar_helper.parse_molecule('3u7y.pdb', component=component)
     else:
         data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.pdb')
-    return data
-
-@callback(Output('viewer', 'data', allow_duplicate=True), 
-          Input('load_traj', 'n_clicks'),
-          prevent_initial_call=True)
-def load_trajectory(yes):
-    topo = molstar_helper.parse_url('/assets/traj.pdb')
-    coord = molstar_helper.parse_url('/assets/traj.dcd')
-    data = molstar_helper.get_trajectory(topo, coord)
     return data
 
 @callback(Output('viewer', 'selection'),

@@ -18,40 +18,16 @@ Import `dash_molstar` and then you can add it to your layout as you did to other
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
 
 app = Dash(__name__)
 app.layout = html.Div(
     dash_molstar.MolstarViewer(
         id='viewer', style={'width': '500px', 'height':'500px'}
     ),
-    html.Button(id='load_protein', children="Load Protein")
 )
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-```
-
-Load a structure from local file with callback:
-
-```py
-@app.callback(Output('viewer', 'data'), 
-              Input('load_protein', 'n_clicks'),
-              prevent_initial_call=True)
-def display_output(yes):
-    data = molstar_helper.parse_molecule('3u7y.pdb')
-    return data
-```
-
-Or from a remote url:
-
-```py
-@app.callback(Output('viewer', 'data'), 
-              Input('load_protein', 'n_clicks'),
-              prevent_initial_call=True)
-def display_output(yes):
-    data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.cif')
-    return data
 ```
 
 Clone the repository to your local directory and run the following command to see the demo:
@@ -60,4 +36,6 @@ Clone the repository to your local directory and run the following command to se
 python usage.py
 ```
 
-To see the detailed introduction of parameters and callbacks, check out the [Documentation](https://github.com/everburstSun/dash-molstar/blob/main/DOCUMENTATION.md).
+## Documentation
+
+To see the detailed introduction of parameters and callbacks, check out the [Documentation](https://dash-molstar.readthedocs.io/).
