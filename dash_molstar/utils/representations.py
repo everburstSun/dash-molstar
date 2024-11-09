@@ -87,7 +87,8 @@ class Representation(object):
             else:
                 print(f"Warning: '{key}' is not a valid parameter for {param_type}. Ignoring this parameter.")
 
-    def np(self, name, params=None):
+    @staticmethod
+    def np(name, params=None):
         """
         Generate `NamedParams` for parameters
 

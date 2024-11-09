@@ -1,5 +1,9 @@
 # dash-molstar Changelog
 
+## [1.2.1] - 2024-11-09
+### Changed
+- Making named params as a classmethod
+
 ## [1.2.0] - 2024-09-23
 ### Added
 - Loading trajectories now supported
