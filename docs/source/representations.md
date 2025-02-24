@@ -841,7 +841,9 @@ No settings available.
             - *colors* (list) – Array of color entries in hex values.
 
 #### hydrophobicity
-- **list** (list) – A predefined list of colors in hex values.
+- **list** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 - **scale** (string) – Specifies the hydrophobicity scale type. Available values are "DGwif", "DGwoct" and "Oct-IF".
 
 #### illustrative
@@ -856,7 +858,9 @@ No settings available.
                 - *clusteringStepCount* (int) – Number of steps in clustering for color differentiation.
                 - *minSampleCount* (int) – Minimum number of samples used to determine colors.
             - *colors* (dict as NamedParams) – List-based color settings.
-                - *list* (list) – Array of color entries in hex values.
+                - *list* (dict) – Contains options for predefined color sets.
+                    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+                    - *colors* (list) – Array of color entries in hex values.
         - *asymId* (string) – Specifies the asymmetry ID type. (available values are "label" and "auth")
     - *entity-id* (NamedParams) – Set carbon colors by entity ID.
         - *palette* (NamedParams) – Defines the color palette settings.
@@ -868,7 +872,9 @@ No settings available.
                 - *clusteringStepCount* (int) – Number of steps in clustering for color differentiation.
                 - *minSampleCount* (int) – Minimum number of samples used to determine colors.
             - *colors* (dict as NamedParams) – List-based color settings.
-                - *list* (list) – Array of color entries in hex values.
+                - *list* (dict) – Contains options for predefined color sets.
+                    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+                    - *colors* (list) – Array of color entries in hex values.
     - *entity-source* (NamedParams) – Set carbon colors by entity source.
         - *palette* (NamedParams) – Defines the color palette settings.
             - *generate* (dict as NamedParams) – Generates a color palette based on various properties.
@@ -879,7 +885,9 @@ No settings available.
                 - *clusteringStepCount* (int) – Number of steps in clustering for color differentiation.
                 - *minSampleCount* (int) – Minimum number of samples used to determine colors.
             - *colors* (dict as NamedParams) – List-based color settings.
-                - *list* (list) – Array of color entries in hex values.
+                - *list* (dict) – Contains options for predefined color sets.
+                    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+                    - *colors* (list) – Array of color entries in hex values.
     - *model-index* (NamedParams) – Set carbon colors by model index.
         - *palette* (NamedParams) – Defines the color palette settings.
             - *generate* (dict as NamedParams) – Generates a color palette based on various properties.
@@ -890,7 +898,9 @@ No settings available.
                 - *clusteringStepCount* (int) – Number of steps in clustering for color differentiation.
                 - *minSampleCount* (int) – Minimum number of samples used to determine colors.
             - *colors* (dict as NamedParams) – List-based color settings.
-                - *list* (list) – Array of color entries in hex values.
+                - *list* (dict) – Contains options for predefined color sets.
+                    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+                    - *colors* (list) – Array of color entries in hex values.
     - *structure-index* (NamedParams) – Set carbon colors by structure index.
         - *palette* (NamedParams) – Defines the color palette settings.
             - *generate* (dict as NamedParams) – Generates a color palette based on various properties.
@@ -901,7 +911,9 @@ No settings available.
                 - *clusteringStepCount* (int) – Number of steps in clustering for color differentiation.
                 - *minSampleCount* (int) – Minimum number of samples used to determine colors.
             - *colors* (dict as NamedParams) – List-based color settings.
-                - *list* (list) – Array of color entries in hex values.
+                - *list* (dict) – Contains options for predefined color sets.
+                    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+                    - *colors* (list) – Array of color entries in hex values.
     - *uniform* (dict as NamedParams) – Specify color as uniform.
         - *value* (Color) – A color in hex value.
     - *molecule-type* (dict as NamedParams) – Define colors by molecule type.
@@ -935,7 +947,9 @@ No settings available.
 
 #### occupancy
 - **domain** ([float, float]) – Defines the range of occupancy values. Ranging from 0 to 1.
-- **list** (list) – Array of color entries in hex values.
+- **list** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 
 #### operator-hkl
 - **palette** (NamedParams) – Defines the color palette settings for the representation.
@@ -967,7 +981,9 @@ No settings available.
 
 #### partial-charge
 - **domain** ([float, float]) – Defines the range of partial charge values.
-- **list** (list) – Array of color entries in hex values.
+- **list** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 
 #### polymer-id
 - **palette** (NamedParams) – Defines the color palette settings for the representation.
@@ -1012,7 +1028,9 @@ No settings available.
     - *custom* (dict as NamedParams) – Allows for custom colors for specific secondary structures, with individual color settings in hex values, including "alphaHelix", "threeTenHelix", "piHelix", "betaTurn", "betaStrand", "coil", "bend", "turn", "dna", "rna", "carbohydrate".
 
 #### sequence-id
-- **list** (list) – Array of color entries in hex values.
+- **list** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 
 #### shape-group
 No settings available.
@@ -1047,7 +1065,9 @@ No settings available.
 
 #### uncertainty
 - **domain** ([float, float]) – Defines the range of uncertainty values.
-- **list** (list) – Array of color entries in hex values.
+- **list** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 
 #### unit-index
 - **palette** (NamedParams) – Defines the color palette settings for the representation.
@@ -1081,7 +1101,9 @@ No settings available.
             - *colors* (list) – Array of color entries in hex values.
 
 #### volume-value
-- **colorList** (list) – Array of color entries in hex values.
+- **colorList** (dict) – Contains options for predefined color sets.
+    - *kind* ("set" | "interpolate") – Specifies whether colors are directly set or interpolated.
+    - *colors* (list) – Array of color entries in hex values.
 
 #### external-volume
 - **volume** (ValueRef) – Reference to the volume data.
