@@ -6,9 +6,9 @@ from .representations import Representation
 
 
 supported_formats = {
-    'mol': ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2"],
+    'mol': ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2", "lammps_data", "lammps_traj_data"],
     'snapshot': ["json", "molj", "molx", "zip"],
-    'coords': ["dcd", "xtc", "trr", "nctraj"]
+    'coords': ["dcd", "xtc", "trr", "nctraj", "lammpstrj"],
 }
 
 def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
@@ -24,7 +24,7 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         Otherwise the format has to be specified manually.
     `fmt` — str (optional)
         Format of the input molecule. 
-        Supported formats include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` (default: `None`)
+        Supported formats include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data` (default: `None`)
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -86,11 +86,11 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
     `fmt` — str (optional)
         Format of the input content. (default: `None`)
 
-        Supported formats for structures include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` 
+        Supported formats for structures include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data`
 
         Supported formats for states and sessions include `json`, `molj`, `molx`, `zip`
 
-        Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`
+        Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj`
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -146,7 +146,7 @@ def parse_coordinate(inp, fmt=None):
         Otherwise the format has to be specified manually.
     `fmt` — str (optional)
         Format of the input molecule. 
-        Supported formats include `dcd`, `xtc`, `trr`, `nctraj` (default: `None`)
+        Supported formats include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj` (default: `None`)
 
     Returns
     -------
