@@ -126,6 +126,10 @@ app.layout = html.Div(
 )
 ```
 
+### preset
+
+
+
 ## Loading trajectories
 
 Dash-molstar allows users to load trajectories into molstar viewer. Simple trajectories (i.e. multi-frame NMR structures) can be loaded with a multi-frame PDB file. The trajectories for molecular dynamic similation can also be loaded. 

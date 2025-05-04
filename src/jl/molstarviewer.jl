@@ -13,6 +13,7 @@ Keyword arguments:
 - `data` (Bool | Real | String | Dict | Array; optional): Data containing the structure info that should be loaded into molstar viewer, as well as some control flags.
 The data can be generated with python method `parse_molecule`.
 - `focus` (Dict; optional): The structure region to let the camera focus on in the molstar viewer.
+- `frame` (Dict; optional): The trajectory frame in the molstar viewer.
 - `layout` (Dict; optional): The layout of the molstar viewer. Determining what controls to be displayed. 
 
 The layout is not allowed to be changed once the component has been initialized.
@@ -20,7 +21,7 @@ The layout is not allowed to be changed once the component has been initialized.
 - `style` (Dict; optional): The HTML property `style` to control the appearence of the container of molstar viewer.
 """
 function molstarviewer(; kwargs...)
-        available_props = Symbol[:id, :className, :data, :focus, :layout, :selection, :style]
+        available_props = Symbol[:id, :className, :data, :focus, :frame, :layout, :selection, :style]
         wild_props = Symbol[]
         return Component("molstarviewer", "MolstarViewer", "dash_molstar", available_props, wild_props; kwargs...)
 end

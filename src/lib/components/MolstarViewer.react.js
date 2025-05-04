@@ -1,5 +1,6 @@
 import React, {Component, createRef} from 'react';
 import PropTypes from 'prop-types';
+import {ColorNames} from 'molstar/lib/mol-util/color/names';
 
 /**
  * The Molstar viewer component for dash
@@ -19,9 +20,10 @@ export default class MolstarViewer extends Component {
             showVolumeStreamingControls: false,
             showAssemblySymmetryControls: false,
             showValidationReportControls: false,
+            showPredictedAlignedErrorPlot: true,
             showMembraneOrientationPreset: false,
             showNakbColorTheme: false,
-            detachedFromSierra: true,
+            detachedFromSierra: false,
             layoutIsExpanded: false,
             layoutShowControls: false,
             layoutControlsDisplay: 'reactive',
@@ -29,6 +31,9 @@ export default class MolstarViewer extends Component {
             layoutShowLog: false,
             viewportShowExpand: true,
             viewportShowSelectionMode: true,
+            backgroundColor: ColorNames.white,
+            manualReset: false,
+            pickingAlphaThreshold: 0.5,
             showWelcomeToast: false,
         };
         const defaultStyle = {
@@ -41,7 +46,8 @@ export default class MolstarViewer extends Component {
             style: defaultStyle,
             className: props.className,
             selection: props.selection,
-            focus: props.focus
+            focus: props.focus,
+            frame: props.frame,
         };
         this.loadedShapes = {};
         this.loadedStructures = {};
@@ -144,6 +150,14 @@ export default class MolstarViewer extends Component {
         }
         this.setState({focus: focus});
     }
+    handleFrameChange(frame_index) {
+        if (Object.keys(this.loadedStructures).length != 0) {
+            if (typeof frame_index === 'number') {
+                this.viewer.setFrame(frame_index);
+            }
+            this.setState({frame: frame_index});
+        }
+    }
     bindingComponentToMolecule(data, model_index) {
         // binding structure ID to component
         if (Array.isArray(data.component)) {
@@ -191,9 +205,9 @@ export default class MolstarViewer extends Component {
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
-                    if (data.hasOwnProperty('component')) {
-                        this.bindingComponentToMolecule(data, model_index);
-                        this.handleComponentChange(data.component);
+                    if (topo.hasOwnProperty('component')) {
+                        this.bindingComponentToMolecule(topo, model_index);
+                        this.handleComponentChange(topo.component);
                     }
                 });
             } else if (data.type === 'shape') {
@@ -249,6 +263,9 @@ export default class MolstarViewer extends Component {
             if (this.state.focus) {
                 this.handleFocusChange(this.state.focus);
             }
+            if (this.state.frame) {
+                this.handleFrameChange(this.state.frame);
+            }
         }
     }
     componentDidUpdate(prevProps) {
@@ -260,6 +277,9 @@ export default class MolstarViewer extends Component {
         }
         if (this.props.focus !== prevProps.focus) {
             this.handleFocusChange(this.props.focus);
+        }
+        if (this.props.frame !== prevProps.frame) {
+            this.handleFrameChange(this.props.frame);
         }
     }
 
@@ -273,12 +293,11 @@ export default class MolstarViewer extends Component {
             layout={this.state.layout}
             selection={this.props.selection}
             focus={this.props.focus}
+            frame={this.props.frame}
             />
         );
     }
 }
-
-MolstarViewer.defaultProps = {};
 
 MolstarViewer.propTypes = {
     /**
@@ -318,6 +337,11 @@ MolstarViewer.propTypes = {
      * The structure region to let the camera focus on in the molstar viewer.
      */
     focus: PropTypes.object,
+
+    /**
+     * The trajectory frame in the molstar viewer.
+     */
+    frame: PropTypes.number,
 
     /**
      * Dash-assigned callback that should be called to report property changes

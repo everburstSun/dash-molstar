@@ -292,7 +292,7 @@ def get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity
         'detail': detail
     }
 
-def get_targets(chain, residue=None, auth=False):
+def get_targets(chain, residue=None, atom=None, auth=False):
     """
     Select residues from a given chain. If no residue was specified, the entire chain will be selected.
 
@@ -302,6 +302,8 @@ def get_targets(chain, residue=None, auth=False):
         Name of the target chain
     `residue` — int | List[int] (optional)
         Residue index of the target residues, corresponding to the structure file. (default: `None`)
+    `atom` — str | List[str] (optional)
+        Atom name of the target residues, corresponding to the structure file. (default: `None`)
     `auth` — bool (optional)
         If a cif file was loaded, set `auth` to `True` to select the authentic chain names and residue numbers (default: `False`)
 
@@ -321,7 +323,7 @@ def get_targets(chain, residue=None, auth=False):
                     num = eval(res)
                     residues.append(num)
                 except:
-                    pass
+                    residues.append(res)
         target['residue_numbers'] = residues
     return target
 
@@ -411,3 +413,19 @@ def get_focus(targets, analyse=False):
         'targets': targets,
         'analyse': analyse
     }
+
+def get_measurement(targets, measure='label', label=None):
+    if type(targets) != list: targets = [targets]
+    minimum_required = {
+        'label': 1,
+        'orientation': 1,
+        'plane': 1,
+        'distance': 2,
+        'angle': 3,
+        'dihedral': 4
+    }
+    if measure not in minimum_required.keys():
+        raise ValueError(f"Invalid measurement type \"{measure}\". Supported types are {minimum_required.keys()}.")
+    if minimum_required[len(targets)] < minimum_required[measure]:
+        raise ValueError(f"At least {minimum_required[measure]} required by the measurement \"{measure}\", only {len(targets)} provided.")
+    
