@@ -1,6 +1,7 @@
 import dash_molstar
 from dash import Dash, callback, html, Input, Output, State, dcc, clientside_callback
 import dash
+import os
 import json
 import pandas as pd
 import plotly.express as px
@@ -9,7 +10,7 @@ from dash_molstar.utils.representations import Representation
 import dash_bootstrap_components as dbc
 
 app = Dash(__name__, assets_folder='bootstrap')
-df = pd.read_json("./tests/H_G_interaction.json")
+df = pd.read_json(os.path.join("tests", "H_G_interaction.json"))
 
 enable_outline = {
     'postprocessing': {
@@ -23,6 +24,7 @@ enable_outline = {
 }
 
 app.layout = html.Div([
+    # Protein loading
     dbc.Row([
         dbc.Col([
             html.Button(id='load_protein', children="Load Protein", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
@@ -56,6 +58,7 @@ app.layout = html.Div([
         ])
     ]),
     html.Hr(style={'margin': '25px 0 25px 0'}),
+    # Trajectory loading
     dbc.Row([
         dbc.Col([
             dash_molstar.MolstarViewer(
@@ -66,11 +69,14 @@ app.layout = html.Div([
         dbc.Col([
             html.Button(id='load_traj', children="Load Trajectory", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
             html.Br(),
+            html.Span([html.Label("Current Frame Number: ", style={'margin': '10px 10px 50px 5px'}), html.Strong(id='frame_number')]),
+            html.Br(),
             html.Label("Select Frame", style={'margin': '5px 0 5px 5px'}),
             dcc.Slider(1, 10, 1, value=1, id='frame_select',updatemode='drag'),
         ])
     ]),
     html.Hr(style={'margin': '25px 0 25px 0'}),
+    # Shape loading
     dbc.Row([
         dbc.Col([
             dash_molstar.MolstarViewer(
@@ -139,7 +145,7 @@ app.layout = html.Div([
           Input('load_protein', 'n_clicks'),
           prevent_initial_call=True)
 def load_protein(yes):
-    data = molstar_helper.parse_molecule('3u7y.pdb')
+    data = molstar_helper.parse_molecule(os.path.join('tests', '3u7y.pdb'))
     return data
 
 @callback(Output('viewer', 'data', allow_duplicate=True), 
@@ -170,7 +176,7 @@ def load_protein_with_rep(yes):
     ag = molstar_helper.create_component("Antigen", molstar_helper.get_targets(chain="G"), ag_rep)
 
     component=[ag,cdrs]
-    data = molstar_helper.parse_molecule('./tests/3u7y.pdb', component=component)
+    data = molstar_helper.parse_molecule(os.path.join('tests', '3u7y.pdb'), component=component)
 
     return data
 
@@ -192,7 +198,7 @@ def load_protein_with_shapes(yes):
     chainA = molstar_helper.create_component("ChainA", molstar_helper.get_targets(chain="A"), surface)
 
     component=[chainA]
-    mol = molstar_helper.parse_molecule('./tests/7u28.cif', component=component)
+    mol = molstar_helper.parse_molecule(os.path.join('tests', '7u28.cif'), component=component)
     shapes = [ molstar_helper.get_sphere(center=(shape['x'], shape['y'], shape['z']),
                                          radius=shape['radius'],
                                          label=shape['name'],
@@ -278,10 +284,10 @@ def load_traj(yes):
     surface.set_type_params({'radiusOffset': 0.3, 'ignoreHydrogens': True, 'alpha': 0.1})
     surface.set_color_params({'value': 0x009CE0})
     polymer = molstar_helper.create_component("polymer", chainA, [cartoon, surface])
-    
-    topo = molstar_helper.parse_molecule('./tests/Villin.gro', component=polymer, preset={'kind': 'empty'})
-    coords = molstar_helper.parse_coordinate('./tests/Villin.trr')
-    
+
+    topo = molstar_helper.parse_molecule(os.path.join('tests', 'Villin.gro'), component=polymer, preset={'kind': 'empty'})
+    coords = molstar_helper.parse_coordinate(os.path.join('tests', 'Villin.trr'))
+
     data = molstar_helper.get_trajectory(topo, coords)
     return data
 
@@ -293,6 +299,17 @@ clientside_callback(
     """,
     Output('viewer-2', 'frame'), 
     Input('frame_select', 'value'),
+    prevent_initial_call=True
+)
+
+clientside_callback(
+    """
+    function (value) {
+        return value+1; // 1-based index for the frame
+    }
+    """,
+    Output('frame_number', 'children'),
+    Input('viewer-2', 'frame'),
     prevent_initial_call=True
 )
 

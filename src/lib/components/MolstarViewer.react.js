@@ -254,6 +254,13 @@ export default class MolstarViewer extends Component {
     componentDidMount() {
         if (this.viewerRef.current) {
             this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
+
+            // subscribe to frame change
+            this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
+                this.setState({frame: this.viewer.getCurrentFrame(state)});
+                this.props.setProps({frame: this.viewer.getCurrentFrame(state)});
+            });
+
             if (this.state.data) {
                 this.handleDataChange(this.state.data);
             }
@@ -289,11 +296,11 @@ export default class MolstarViewer extends Component {
             ref={this.viewerRef} 
             style={this.state.style}
             className={this.state.className}
-            data={this.props.data}
+            data={this.state.data}
             layout={this.state.layout}
-            selection={this.props.selection}
-            focus={this.props.focus}
-            frame={this.props.frame}
+            selection={this.state.selection}
+            focus={this.state.focus}
+            frame={this.state.frame}
             />
         );
     }
