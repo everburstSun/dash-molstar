@@ -48,6 +48,8 @@ export default class MolstarViewer extends Component {
             selection: props.selection,
             focus: props.focus,
             frame: props.frame,
+            updatefocusonframechange: props.updatefocusonframechange,
+            updateselectiononframechange: props.updateselectiononframechange,
         };
         this.loadedShapes = {};
         this.loadedStructures = {};
@@ -121,7 +123,7 @@ export default class MolstarViewer extends Component {
             }
             this.viewer.select(targets, selection.mode, selection.modifier);
         }
-        this.setState({selection: selection});
+        this.setState({selection: this.viewer.getCurrentSelection()});
     }
     handleFocusChange(focus) {
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
@@ -148,7 +150,7 @@ export default class MolstarViewer extends Component {
             }
             this.viewer.setFocus(targets, focus.analyse);
         }
-        this.setState({focus: focus});
+        this.setState({focus: this.viewer.getCurrentFocus()});
     }
     handleFrameChange(frame_index) {
         if (Object.keys(this.loadedStructures).length != 0) {
@@ -255,10 +257,28 @@ export default class MolstarViewer extends Component {
         if (this.viewerRef.current) {
             this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
 
+            // subscribe to focus change
+            this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
+                this.setState({focus: this.viewer.getCurrentFocus()});
+                this.props.setProps({focus: this.viewer.getCurrentFocus()});
+            });
+
+            // subscribe to selection change
+            this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
+                this.setState({selection: this.viewer.getCurrentSelection()});
+                this.props.setProps({selection: this.viewer.getCurrentSelection()});
+            });
+
             // subscribe to frame change
             this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
                 this.setState({frame: this.viewer.getCurrentFrame(state)});
                 this.props.setProps({frame: this.viewer.getCurrentFrame(state)});
+                if (this.state.updatefocusonframechange) {
+                    this.setState({focus: this.viewer.getCurrentFocus()});
+                }
+                if (this.state.updateselectiononframechange) {
+                    this.setState({selection: this.viewer.getCurrentSelection()});
+                }
             });
 
             if (this.state.data) {
@@ -272,6 +292,12 @@ export default class MolstarViewer extends Component {
             }
             if (this.state.frame) {
                 this.handleFrameChange(this.state.frame);
+            }
+            if (this.state.updatefocusonframechange) {
+                this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
+            }
+            if (this.state.updateselectiononframechange) {
+                this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
             }
         }
     }
@@ -288,6 +314,12 @@ export default class MolstarViewer extends Component {
         if (this.props.frame !== prevProps.frame) {
             this.handleFrameChange(this.props.frame);
         }
+        if (this.props.updatefocusonframechange !== prevProps.updatefocusonframechange) {
+            this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
+        }
+        if (this.props.updateselectiononframechange !== prevProps.updateselectiononframechange) {
+            this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
+        }
     }
 
     render() {
@@ -301,6 +333,8 @@ export default class MolstarViewer extends Component {
             selection={this.state.selection}
             focus={this.state.focus}
             frame={this.state.frame}
+            updatefocusonframechange={this.state.updatefocusonframechange}
+            updateselectiononframechange={this.state.updateselectiononframechange}
             />
         );
     }
@@ -311,7 +345,7 @@ MolstarViewer.propTypes = {
      * The ID used to identify this component in Dash callbacks.
      */
     id: PropTypes.string,
-    
+
     /**
      * The HTML property `style` to control the appearence of the container of molstar viewer.
      */
@@ -334,12 +368,12 @@ MolstarViewer.propTypes = {
      * The layout is not allowed to be changed once the component has been initialized.
      */
     layout: PropTypes.object,
-    
+
     /**
      * The structure region to be selected in the molstar viewer.
      */
     selection: PropTypes.object,
-    
+
     /**
      * The structure region to let the camera focus on in the molstar viewer.
      */
@@ -349,6 +383,16 @@ MolstarViewer.propTypes = {
      * The trajectory frame in the molstar viewer.
      */
     frame: PropTypes.number,
+
+    /**
+     * Update focus data when frame index have changed.
+     */
+    updatefocusonframechange: PropTypes.bool,
+
+    /**
+     * Update selection data when frame index have changed.
+     */
+    updateselectiononframechange: PropTypes.bool,
 
     /**
      * Dash-assigned callback that should be called to report property changes

@@ -40,7 +40,7 @@ Keyword arguments:
     The structure region to let the camera focus on in the molstar
     viewer.
 
-- frame (int; optional):
+- frame (number; optional):
     The trajectory frame in the molstar viewer.
 
 - layout (dict; optional):
@@ -49,7 +49,13 @@ Keyword arguments:
     component has been initialized.
 
 - selection (dict; optional):
-    The structure region to be selected in the molstar viewer."""
+    The structure region to be selected in the molstar viewer.
+
+- updatefocusonframechange (boolean; optional):
+    Update focus data when frame index have changed.
+
+- updateselectiononframechange (boolean; optional):
+    Update selection data when frame index have changed."""
     _children_props = []
     _base_nodes = ['children']
     _namespace = 'dash_molstar'
@@ -65,12 +71,14 @@ Keyword arguments:
         layout: typing.Optional[dict] = None,
         selection: typing.Optional[dict] = None,
         focus: typing.Optional[dict] = None,
-        frame: typing.Optional[int] = None,
+        frame: typing.Optional[NumberType] = None,
+        updatefocusonframechange: typing.Optional[bool] = None,
+        updateselectiononframechange: typing.Optional[bool] = None,
         **kwargs
     ):
-        self._prop_names = ['id', 'className', 'data', 'focus', 'frame', 'layout', 'selection', 'style']
+        self._prop_names = ['id', 'className', 'data', 'focus', 'frame', 'layout', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self._valid_wildcard_attributes =            []
-        self.available_properties = ['id', 'className', 'data', 'focus', 'frame', 'layout', 'selection', 'style']
+        self.available_properties = ['id', 'className', 'data', 'focus', 'frame', 'layout', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self.available_wildcard_properties =            []
         _explicit_args = kwargs.pop('_explicit_args')
         _locals = locals()

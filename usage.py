@@ -1,5 +1,5 @@
 import dash_molstar
-from dash import Dash, callback, html, Input, Output, State, dcc, clientside_callback
+from dash import Dash, callback, html, Input, Output, State, dcc, clientside_callback, dash_table
 import dash
 import os
 import json
@@ -26,6 +26,7 @@ enable_outline = {
 app.layout = html.Div([
     # Protein loading
     dbc.Row([
+        html.H1("Load Protein"),
         dbc.Col([
             html.Button(id='load_protein', children="Load Protein", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
             html.Button(id='load_protein_rep', children="Load Protein With Component", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
@@ -57,9 +58,110 @@ app.layout = html.Div([
             ),
         ])
     ]),
+    dbc.Row([
+        dbc.Col([html.Strong("Current Focus"), html.Hr(style={'margin': '5px 0 10   px 0'}),], width=6),
+        dbc.Col([html.Strong("Current Selection"), html.Hr(style={'margin': '5px 0 10px 0'}),], width=6),
+    ]),
+    dbc.Row([
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'chain', 'name': 'chain', 'selectable': False}],
+                selected_rows=[0],
+                fixed_rows={'headers':True, 'data':0},
+                id='focus-table-chain',
+                row_selectable="single")
+        ], width=2),
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'residue', 'name': 'residue', 'selectable': False}],
+                selected_rows=[0],
+                fixed_rows={'headers':True, 'data':0},
+                id='focus-table-res',
+                row_selectable="single")
+        ], width=2),
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'atom', 'name': 'atom', 'selectable': False}],
+                fixed_rows={'headers':True, 'data':0},
+                id='focus-table-atom',
+                row_selectable="single")
+        ], width=2),
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'chain', 'name': 'chain', 'selectable': False}],
+                selected_rows=[0],
+                fixed_rows={'headers':True, 'data':0},
+                id='sel-table-chain',
+                row_selectable="single")
+        ], width=2),
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'residue', 'name': 'residue', 'selectable': False}],
+                selected_rows=[0],
+                fixed_rows={'headers':True, 'data':0},
+                id='sel-table-res',
+                row_selectable="single")
+        ], width=2),
+        dbc.Col([
+            dash_table.DataTable(
+                data=[],
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'minWidth': '10px', 'width': '180px', 'maxWidth': '180px',
+                },
+                style_table={'overflowX': 'auto', 'height': '232px', 'overflowY': 'auto'},
+                style_cell={'textAlign': 'left'},
+                columns=[{'id': 'atom', 'name': 'atom', 'selectable': False}],
+                fixed_rows={'headers':True, 'data':0},
+                id='sel-table-atom',
+                row_selectable="single")
+        ], width=2)
+    ]),
     html.Hr(style={'margin': '25px 0 25px 0'}),
     # Trajectory loading
     dbc.Row([
+        html.H1("Load Trajectory"),
         dbc.Col([
             dash_molstar.MolstarViewer(
                 id='viewer-2',style={'width': 'auto', 'height':'500px'},
@@ -78,6 +180,7 @@ app.layout = html.Div([
     html.Hr(style={'margin': '25px 0 25px 0'}),
     # Shape loading
     dbc.Row([
+        html.H1("Load Shape"),
         dbc.Col([
             dash_molstar.MolstarViewer(
                 id='viewer-3',style={'width': 'auto', 'height':'500px'}
@@ -272,6 +375,22 @@ def mouse_click(clickData, onclick):
     if focus: focusdata = molstar_helper.get_focus([residue1, residue2], analyse=True)
 
     return seldata, focusdata
+
+@callback(#Output('viewer', 'selection', allow_duplicate=True),
+          Input('viewer', 'focus'),
+          prevent_initial_call=True)
+def get_focus_data(data):
+    if len(data.keys()) < 4:
+        return
+    print("focus", data)
+
+@callback(#Output('viewer', 'selection', allow_duplicate=True),
+          Input('viewer', 'selection'),
+          prevent_initial_call=True)
+def get_selection_data(data):
+    if len(data.keys()) < 4:
+        return
+    print("selection", data)
 
 @callback(Output('viewer-2', 'data'), 
           Input('load_traj', 'n_clicks'),
