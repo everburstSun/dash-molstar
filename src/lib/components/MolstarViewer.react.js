@@ -46,6 +46,7 @@ export default class MolstarViewer extends Component {
             style: defaultStyle,
             className: props.className,
             selection: props.selection,
+            hover: props.hover,
             focus: props.focus,
             frame: props.frame,
             updatefocusonframechange: props.updatefocusonframechange,
@@ -102,55 +103,40 @@ export default class MolstarViewer extends Component {
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
         if (model_index >= 0) {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            const targets = [];
+            let targets = [];
             if (selection.targets && selection.targets[0] !== null) {
                 // convert data from python to molstar data structure
-                for (let target of selection.targets) {
-                    const newTarget = {
-                        modelId: id,
-                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-                    }
-                    // check if any residue number has been selected
-                    if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.auth) {
-                            newTarget.authSeqId = target.residue_numbers;
-                        } else {
-                            newTarget.labelSeqId = target.residue_numbers;
-                        }
-                    }
-                    targets.push(newTarget);
-                }
+                targets = this.parseTargetsFromPython(selection.targets, id)
             }
-            this.viewer.select(targets, selection.mode, selection.modifier);
+            this.viewer.select(targets, 'select', selection.modifier);
         }
-        this.setState({selection: this.viewer.getCurrentSelection()});
+        this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
+    }
+    handleHoverChange(hover) {
+        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+        if (model_index >= 0) {
+            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            let targets = [];
+            if (hover.targets && hover.targets[0] !== null) {
+                // convert data from python to molstar data structure
+                targets = this.parseTargetsFromPython(hover.targets, id)
+            }
+            this.viewer.select(targets, 'hover', hover.modifier);
+        }
+        this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
     }
     handleFocusChange(focus) {
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
         if (model_index >= 0) {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            const targets = [];
+            let targets = [];
             if (focus.targets && focus.targets[0] !== null) {
                 // convert data from python to molstar data structure
-                for (let target of focus.targets) {
-                    const newTarget = {
-                        modelId: id,
-                        ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-                    }
-                    // check if any residue number has been selected
-                    if (target.hasOwnProperty('residue_numbers')) {
-                        if (target.auth) {
-                            newTarget.authSeqId = target.residue_numbers;
-                        } else {
-                            newTarget.labelSeqId = target.residue_numbers;
-                        }
-                    }
-                    targets.push(newTarget);
-                }
+                targets = this.parseTargetsFromPython(focus.targets, id)
             }
             this.viewer.setFocus(targets, focus.analyse);
         }
-        this.setState({focus: this.viewer.getCurrentFocus()});
+        this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
     }
     handleFrameChange(frame_index) {
         if (Object.keys(this.loadedStructures).length != 0) {
@@ -169,6 +155,98 @@ export default class MolstarViewer extends Component {
         } else if (typeof data.component === "object") {
             data.component.modelId = this.loadedStructures[model_index];
         }
+    }
+    parseTargetsForPython(targets) {
+        const chainsMap = new Map();
+
+        for (const t of targets) {
+            const chainKey = t.labelAsymId ?? '';
+            if (!chainsMap.has(chainKey)) {
+                chainsMap.set(chainKey, {
+                    name: t.labelAsymId,
+                    auth_name: t.authAsymId,
+                    residues: []
+                });
+            }
+            const chainObj = chainsMap.get(chainKey);
+
+            let residueObj = chainObj.residues.find((r) =>
+                r.index === t.labelSeqId &&
+                r.ins_code === t.pdbxInsCode &&
+                r.number === t.authSeqId &&
+                r.name === t.labelCompId
+            );
+            if (!residueObj) {
+                residueObj = {
+                    name: t.labelCompId,
+                    index: t.labelSeqId,
+                    number: t.authSeqId,
+                    ins_code: t.pdbxInsCode,
+                    atoms: []
+                };
+                chainObj.residues.push(residueObj);
+            }
+            residueObj.atoms.push({
+                name: t.labelAtomId,
+                number: t.atomIndex,
+                x: t.x,
+                y: t.y,
+                z: t.z
+            });
+        }
+        return {chains: Array.from(chainsMap.values())};
+    }
+    parseTargetsFromPython(targets, modelId) {
+        const parsedTargets = [];
+
+        for (let target of targets) {
+            const chains = target.chains;
+            const auth = ('auth' in target) ? target.auth : false;
+            for (const chain of chains) {
+                const residues = chain.residues;
+                // when residues are empty, push chain level object
+                // if no residues are provided, we assume the user wants to select the whole chain
+                if (!residues || residues.length === 0) {
+                    parsedTargets.push({
+                        auth: auth,
+                        modelId: modelId,
+                        labelAsymId: chain.name,
+                        authAsymId: chain.auth_name
+                    });
+                    continue;
+                }
+                for (const residue of residues) {
+                    const atoms = residue.atoms;
+                    // when atoms are empty, push residue level object
+                    // if no atoms are provided, we assume the user wants to select the whole residue
+                    if (!atoms || atoms.length === 0) {
+                        parsedTargets.push({
+                            auth: auth,
+                            modelId: modelId,
+                            labelAsymId: chain.name,
+                            authAsymId: chain.auth_name,
+                            labelSeqId: residue.index,
+                            authSeqId: residue.number,
+                            pdbxInsCode: residue.ins_code,
+                        });
+                        continue;
+                    }
+                    for (const atom of atoms) {
+                        parsedTargets.push({
+                            auth: auth,
+                            modelId: modelId,
+                            labelAsymId: chain.name,
+                            authAsymId: chain.auth_name,
+                            labelSeqId: residue.index,
+                            authSeqId: residue.number,
+                            pdbxInsCode: residue.ins_code,
+                            atomIndex: atom.number,
+                        });
+                    }
+                }
+            }
+        }
+        return parsedTargets;
     }
     loadData(data) {
         if (typeof data === "object") {
@@ -259,14 +337,14 @@ export default class MolstarViewer extends Component {
 
             // subscribe to focus change
             this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
-                this.setState({focus: this.viewer.getCurrentFocus()});
-                this.props.setProps({focus: this.viewer.getCurrentFocus()});
+                this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                this.props.setProps({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
             });
 
             // subscribe to selection change
             this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
-                this.setState({selection: this.viewer.getCurrentSelection()});
-                this.props.setProps({selection: this.viewer.getCurrentSelection()});
+                this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
+                this.props.setProps({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
             });
 
             // subscribe to frame change
@@ -274,10 +352,10 @@ export default class MolstarViewer extends Component {
                 this.setState({frame: this.viewer.getCurrentFrame(state)});
                 this.props.setProps({frame: this.viewer.getCurrentFrame(state)});
                 if (this.state.updatefocusonframechange) {
-                    this.setState({focus: this.viewer.getCurrentFocus()});
+                    this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
                 }
                 if (this.state.updateselectiononframechange) {
-                    this.setState({selection: this.viewer.getCurrentSelection()});
+                    this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
                 }
             });
 
@@ -286,6 +364,9 @@ export default class MolstarViewer extends Component {
             }
             if (this.state.selection) {
                 this.handleSelectionChange(this.state.selection);
+            }
+            if (this.state.hover) {
+                this.handleHoverChange(this.state.hover);
             }
             if (this.state.focus) {
                 this.handleFocusChange(this.state.focus);
@@ -307,6 +388,9 @@ export default class MolstarViewer extends Component {
         }
         if (this.props.selection !== prevProps.selection) {
             this.handleSelectionChange(this.props.selection);
+        }
+        if (this.props.hover !== prevProps.hover) {
+            this.handleHoverChange(this.props.hover);
         }
         if (this.props.focus !== prevProps.focus) {
             this.handleFocusChange(this.props.focus);
@@ -331,6 +415,7 @@ export default class MolstarViewer extends Component {
             data={this.state.data}
             layout={this.state.layout}
             selection={this.state.selection}
+            hover={this.state.hover}
             focus={this.state.focus}
             frame={this.state.frame}
             updatefocusonframechange={this.state.updatefocusonframechange}
@@ -373,6 +458,11 @@ MolstarViewer.propTypes = {
      * The structure region to be selected in the molstar viewer.
      */
     selection: PropTypes.object,
+
+    /**
+     * The structure region to be hovered in the molstar viewer.
+     */
+    hover: PropTypes.object,
 
     /**
      * The structure region to let the camera focus on in the molstar viewer.

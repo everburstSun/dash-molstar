@@ -11,7 +11,7 @@ The Molstar viewer component for dash
 
 \usage{
 molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, frame=NULL,
-layout=NULL, selection=NULL, style=NULL,
+hover=NULL, layout=NULL, selection=NULL, style=NULL,
 updatefocusonframechange=NULL,
 updateselectiononframechange=NULL)
 }
@@ -27,6 +27,8 @@ The data can be generated with python method `parse_molecule`.}
 \item{focus}{Named list. The structure region to let the camera focus on in the molstar viewer.}
 
 \item{frame}{Numeric. The trajectory frame in the molstar viewer.}
+
+\item{hover}{Named list. The structure region to be hovered in the molstar viewer.}
 
 \item{layout}{Named list. The layout of the molstar viewer. Determining what controls to be displayed. 
 

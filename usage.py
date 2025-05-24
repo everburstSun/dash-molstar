@@ -1,13 +1,16 @@
-import dash_molstar
-from dash import Dash, callback, html, Input, Output, State, dcc, clientside_callback, dash_table
-import dash
-import os
 import json
+import os
+
+import dash
+import dash_bootstrap_components as dbc
+import dash_molstar
 import pandas as pd
 import plotly.express as px
+from dash import (Dash, Input, Output, State, callback, clientside_callback,
+                  ctx, dash_table, dcc, html, set_props)
 from dash_molstar.utils import molstar_helper
 from dash_molstar.utils.representations import Representation
-import dash_bootstrap_components as dbc
+from dash_molstar.utils.target import Target
 
 app = Dash(__name__, assets_folder='bootstrap')
 df = pd.read_json(os.path.join("tests", "H_G_interaction.json"))
@@ -330,26 +333,24 @@ def update_box(center_x, center_y, center_z, size_x, size_y, size_z):
     box = molstar_helper.get_box(_min, _max)
     return box
 
-@callback(Output('viewer', 'selection'),
+@callback(Output('viewer', 'hover'),
           Input('figure', 'hoverData'),
           prevent_initial_call=True)
 def mouse_hover(hoverData):
     data = hoverData
 
-    if not data: return molstar_helper.get_selection(None, select=False, add=False)
+    if not data: return molstar_helper.get_selection(None, add=False)
 
     residue1 = data['points'][0]['x']
     residue1 = molstar_helper.get_targets(residue1[0], residue1[1:], auth=True)
     residue2 = data['points'][0]['y']
     residue2 = molstar_helper.get_targets(residue2[0], residue2[1:], auth=True)
 
-    seldata = molstar_helper.get_selection([residue1, residue2], select=False, add=False)
+    seldata = molstar_helper.get_selection([residue1, residue2], add=False)
 
     return seldata
 
-@callback(Output('viewer', 'selection', allow_duplicate=True),
-          Output('viewer', 'focus'),
-          Input('figure', 'clickData'),
+@callback(Input('figure', 'clickData'),
           State('onclick', 'value'),
           prevent_initial_call=True)
 def mouse_click(clickData, onclick):
@@ -361,36 +362,17 @@ def mouse_click(clickData, onclick):
     residue2 = data['points'][0]['y']
     residue2 = molstar_helper.get_targets(residue2[0], residue2[1:], auth=True)
 
+    seldata = molstar_helper.get_selection([residue1, residue2], add=False)
+    focusdata = molstar_helper.get_focus([residue1, residue2], analyse=True)
+
     if onclick == '1':
-        select = True
-        focus = False
+        set_props('viewer', {'selection': seldata})
     elif onclick == '2':
-        select = False
-        focus = True
+        set_props('viewer', {'focus': focusdata})
     elif onclick == '3':
-        select = True
-        focus = True
+        set_props('viewer', {'selection': seldata})
+        set_props('viewer', {'focus': focusdata})
 
-    seldata = molstar_helper.get_selection([residue1, residue2], select=select, add=False)
-    if focus: focusdata = molstar_helper.get_focus([residue1, residue2], analyse=True)
-
-    return seldata, focusdata
-
-@callback(#Output('viewer', 'selection', allow_duplicate=True),
-          Input('viewer', 'focus'),
-          prevent_initial_call=True)
-def get_focus_data(data):
-    if len(data.keys()) < 4:
-        return
-    print("focus", data)
-
-@callback(#Output('viewer', 'selection', allow_duplicate=True),
-          Input('viewer', 'selection'),
-          prevent_initial_call=True)
-def get_selection_data(data):
-    if len(data.keys()) < 4:
-        return
-    print("selection", data)
 
 @callback(Output('viewer-2', 'data'), 
           Input('load_traj', 'n_clicks'),
@@ -432,6 +414,103 @@ clientside_callback(
     prevent_initial_call=True
 )
 
+@callback(Input('viewer', 'selection'),
+          Input('viewer', 'focus'),
+          prevent_initial_call=True)
+def update_tables(selection, focus):
+    if 'viewer.focus' in ctx.triggered_prop_ids.keys():
+        if len(focus) == 1:
+            target = Target(focus)
+            chains = target.chains
+            if chains:
+                residues = chains[0].residues
+                set_props('focus-table-chain', {'data': [{'chain': chain.name} for chain in chains]})
+            else:
+                residues = []
+                set_props('focus-table-chain', {'data': [{'chain': ''}]})
+            if residues:
+                atoms = residues[0].atoms
+                set_props('focus-table-res', {'data': [{'residue': f"{residue.number}{residue.ins_code}: {residue.name}"} for residue in residues]})
+            else:
+                atoms = []
+                set_props('focus-table-res', {'data': [{'residue': ''}]})
+            if atoms:
+                set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            else:
+                set_props('focus-table-atom', {'data': [{'atom': ''}]})
+    if 'viewer.selection' in ctx.triggered_prop_ids.keys():
+        if len(selection) == 1:
+            target = Target(selection)
+            chains = target.chains
+            if chains:
+                residues = chains[0].residues
+                set_props('sel-table-chain', {'data': [{'chain': chain.name} for chain in chains]})
+            else:
+                residues = []
+                set_props('sel-table-chain', {'data': [{'chain': ''}]})
+            if residues:
+                atoms = residues[0].atoms
+                set_props('sel-table-res', {'data': [{'residue': f"{residue.number}{residue.ins_code}: {residue.name}"} for residue in residues]})
+            else:
+                atoms = []
+                set_props('sel-table-res', {'data': [{'residue': ''}]})
+            if atoms:
+                set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            else:
+                set_props('sel-table-atom', {'data': [{'atom': ''}]})
+
+@callback(Input('focus-table-chain', 'selected_rows'),
+          Input('focus-table-res', 'selected_rows'),
+          Input('sel-table-chain', 'selected_rows'),
+          Input('sel-table-res', 'selected_rows'),
+          State('viewer', 'selection'), # In real use case, this should be cached
+          State('viewer', 'focus'),     # at the server for performance.
+          prevent_initial_call=True)
+def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, focus):
+    selection = Target(selection)
+    focus = Target(focus)
+    if ctx.triggered_id == 'focus-table-chain':
+        if focus_chain:
+            chain = focus.chains[focus_chain[0]]
+            residues = chain.residues
+            res_focus = focus_res[0] if len(residues) >= focus_res[0] else 0
+            if residues:
+                atoms = residues[res_focus].atoms
+                set_props('focus-table-res', {'data': [{'residue': f"{residue.number}{residue.ins_code}: {residue.name}"} for residue in residues]})
+            else:
+                atoms = []
+                set_props('focus-table-res', {'data': [{'residue': ''}]})
+            if atoms:
+                set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            else:
+                set_props('focus-table-atom', {'data': [{'atom': ''}]})
+    elif ctx.triggered_id == 'focus-table-res':
+        chain = focus.chains[focus_chain[0]]
+        residue = chain.residues[focus_res[0]]
+        if focus_res:
+            atoms = residue.atoms
+            set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+    elif ctx.triggered_id == 'sel-table-chain':
+        if sel_chain:
+            chain = selection.chains[sel_chain[0]]
+            residues = chain.residues
+            res_sel = sel_res[0] if len(residues) >= sel_res[0] else 0
+            if residues:
+                atoms = residues[res_sel].atoms
+                set_props('sel-table-res', {'data': [{'residue': f"{residue.number}{residue.ins_code}: {residue.name}"} for residue in residues]})
+            else:
+                atoms = []
+                set_props('sel-table-res', {'data': [{'residue': ''}]})
+            if atoms:
+                set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            else:
+                set_props('sel-table-atom', {'data': [{'atom': ''}]})
+    elif ctx.triggered_id == 'sel-table-res':
+        chain = selection.chains[sel_chain[0]]
+        residue = chain.residues[sel_res[0]]
+        if sel_res:
+            atoms = residue.atoms
+            set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
 
 if __name__ == '__main__':
     app.run(debug=True)

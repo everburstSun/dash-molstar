@@ -14,6 +14,7 @@ Keyword arguments:
 The data can be generated with python method `parse_molecule`.
 - `focus` (Dict; optional): The structure region to let the camera focus on in the molstar viewer.
 - `frame` (Real; optional): The trajectory frame in the molstar viewer.
+- `hover` (Dict; optional): The structure region to be hovered in the molstar viewer.
 - `layout` (Dict; optional): The layout of the molstar viewer. Determining what controls to be displayed. 
 
 The layout is not allowed to be changed once the component has been initialized.
@@ -23,7 +24,7 @@ The layout is not allowed to be changed once the component has been initialized.
 - `updateselectiononframechange` (Bool; optional): Update selection data when frame index have changed.
 """
 function molstarviewer(; kwargs...)
-        available_props = Symbol[:id, :className, :data, :focus, :frame, :layout, :selection, :style, :updatefocusonframechange, :updateselectiononframechange]
+        available_props = Symbol[:id, :className, :data, :focus, :frame, :hover, :layout, :selection, :style, :updatefocusonframechange, :updateselectiononframechange]
         wild_props = Symbol[]
         return Component("molstarviewer", "MolstarViewer", "dash_molstar", available_props, wild_props; kwargs...)
 end
