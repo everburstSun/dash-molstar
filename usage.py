@@ -62,7 +62,7 @@ app.layout = html.Div([
         ])
     ]),
     dbc.Row([
-        dbc.Col([html.Strong("Current Focus"), html.Hr(style={'margin': '5px 0 10   px 0'}),], width=6),
+        dbc.Col([html.Strong("Current Focus"), html.Hr(style={'margin': '5px 0 10px 0'}),], width=6),
         dbc.Col([html.Strong("Current Selection"), html.Hr(style={'margin': '5px 0 10px 0'}),], width=6),
     ]),
     dbc.Row([
@@ -435,7 +435,7 @@ def update_tables(selection, focus):
                 atoms = []
                 set_props('focus-table-res', {'data': [{'residue': ''}]})
             if atoms:
-                set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+                set_props('focus-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
             else:
                 set_props('focus-table-atom', {'data': [{'atom': ''}]})
     if 'viewer.selection' in ctx.triggered_prop_ids.keys():
@@ -455,7 +455,7 @@ def update_tables(selection, focus):
                 atoms = []
                 set_props('sel-table-res', {'data': [{'residue': ''}]})
             if atoms:
-                set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+                set_props('sel-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
             else:
                 set_props('sel-table-atom', {'data': [{'atom': ''}]})
 
@@ -481,7 +481,7 @@ def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, 
                 atoms = []
                 set_props('focus-table-res', {'data': [{'residue': ''}]})
             if atoms:
-                set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+                set_props('focus-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
             else:
                 set_props('focus-table-atom', {'data': [{'atom': ''}]})
     elif ctx.triggered_id == 'focus-table-res':
@@ -489,7 +489,7 @@ def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, 
         residue = chain.residues[focus_res[0]]
         if focus_res:
             atoms = residue.atoms
-            set_props('focus-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            set_props('focus-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
     elif ctx.triggered_id == 'sel-table-chain':
         if sel_chain:
             chain = selection.chains[sel_chain[0]]
@@ -502,7 +502,7 @@ def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, 
                 atoms = []
                 set_props('sel-table-res', {'data': [{'residue': ''}]})
             if atoms:
-                set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+                set_props('sel-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
             else:
                 set_props('sel-table-atom', {'data': [{'atom': ''}]})
     elif ctx.triggered_id == 'sel-table-res':
@@ -510,7 +510,23 @@ def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, 
         residue = chain.residues[sel_res[0]]
         if sel_res:
             atoms = residue.atoms
-            set_props('sel-table-atom', {'data': [{'atom': atom.name} for atom in atoms]})
+            set_props('sel-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
+
+def add_measurement():
+    residue = molstar_helper.get_targets("H", 111)
+    atoms = [
+        molstar_helper.get_targets("H", 111, 890),
+        molstar_helper.get_targets("H", 111, 891),
+        molstar_helper.get_targets("H", 111, 892),
+        molstar_helper.get_targets("H", 112, 898),
+    ]
+    measurements = [
+        molstar_helper.get_measurement(residue, 'label'),
+        molstar_helper.get_measurement(atoms[:2], 'distance'),
+        molstar_helper.get_measurement(atoms[:3], 'angle'),
+        molstar_helper.get_measurement(atoms, 'dihedral')
+    ]
+    return measurements
 
 if __name__ == '__main__':
     app.run(debug=True)

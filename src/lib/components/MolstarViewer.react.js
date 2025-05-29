@@ -49,6 +49,7 @@ export default class MolstarViewer extends Component {
             hover: props.hover,
             focus: props.focus,
             frame: props.frame,
+            measurement: props.measurement,
             updatefocusonframechange: props.updatefocusonframechange,
             updateselectiononframechange: props.updateselectiononframechange,
         };
@@ -106,7 +107,7 @@ export default class MolstarViewer extends Component {
             let targets = [];
             if (selection.targets && selection.targets[0] !== null) {
                 // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(selection.targets, id)
+                targets = this.parseTargetsFromPython(selection.targets, id);
             }
             this.viewer.select(targets, 'select', selection.modifier);
         }
@@ -119,7 +120,7 @@ export default class MolstarViewer extends Component {
             let targets = [];
             if (hover.targets && hover.targets[0] !== null) {
                 // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(hover.targets, id)
+                targets = this.parseTargetsFromPython(hover.targets, id);
             }
             this.viewer.select(targets, 'hover', hover.modifier);
         }
@@ -132,7 +133,7 @@ export default class MolstarViewer extends Component {
             let targets = [];
             if (focus.targets && focus.targets[0] !== null) {
                 // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(focus.targets, id)
+                targets = this.parseTargetsFromPython(focus.targets, id);
             }
             this.viewer.setFocus(targets, focus.analyse);
         }
@@ -145,6 +146,18 @@ export default class MolstarViewer extends Component {
             }
             this.setState({frame: frame_index});
         }
+    }
+    handleMeasurementChange(measurements) {
+        if (measurements) {
+            if (Array.isArray(measurements)) {
+                measurements.forEach((obj) => {
+                    this.addMeasurement(obj);
+                });
+            } else if (typeof measurements === "object") {
+                this.addMeasurement(measurements);
+            }
+        }
+        this.setState({measurement: measurements});
     }
     bindingComponentToMolecule(data, model_index) {
         // binding structure ID to component
@@ -188,7 +201,7 @@ export default class MolstarViewer extends Component {
             }
             residueObj.atoms.push({
                 name: t.labelAtomId,
-                number: t.atomIndex,
+                index: t.atomIndex,
                 x: t.x,
                 y: t.y,
                 z: t.z
@@ -240,7 +253,7 @@ export default class MolstarViewer extends Component {
                             labelSeqId: residue.index,
                             authSeqId: residue.number,
                             pdbxInsCode: residue.ins_code,
-                            atomIndex: atom.number,
+                            atomIndex: atom.index,
                         });
                     }
                 }
@@ -313,23 +326,26 @@ export default class MolstarViewer extends Component {
     }
     addComponent(component) {
         // construct molstar target object from python helper data
-        const targets = [];
-        for (let target of component.targets) {
-            const newTarget = {
-                modelId: component.modelId,
-                ...target.auth ? {authAsymId: target.chain_name} : {labelAsymId: target.chain_name},
-            }
-            // check if any residue number has been selected
-            if (target.hasOwnProperty('residue_numbers')) {
-                if (target.auth) {
-                    newTarget.authSeqId = target.residue_numbers;
-                } else {
-                    newTarget.labelSeqId = target.residue_numbers;
-                }
-            }
-            targets.push(newTarget);
+        let targets = [];
+        if (component.targets && component.targets[0] !== null) {
+            // convert data from python to molstar data structure
+            targets = this.parseTargetsFromPython(component.targets, component.modelId)
         }
         this.viewer.createComponent(component.label, targets, component.representation);
+    }
+    addMeasurement(measurement) {
+        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+        if (model_index >= 0) {
+            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+            const targets = measurement.targets
+            let parsed_targets = [];
+            if (targets && targets[0] !== null) {
+                targets.forEach((target) => {
+                    parsed_targets.push(this.parseTargetsFromPython([target], id));
+                })
+            }
+            this.viewer.addMeasurement(parsed_targets, measurement.type);
+        }
     }
     componentDidMount() {
         if (this.viewerRef.current) {
@@ -337,8 +353,10 @@ export default class MolstarViewer extends Component {
 
             // subscribe to focus change
             this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
-                this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
-                this.props.setProps({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                if (this.viewer._plugin.managers.structure.focus.history.length > 0) {
+                    this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                    this.props.setProps({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                }
             });
 
             // subscribe to selection change
@@ -374,6 +392,9 @@ export default class MolstarViewer extends Component {
             if (this.state.frame) {
                 this.handleFrameChange(this.state.frame);
             }
+            if (this.state.measurement) {
+                this.handleMeasurementChange(this.state.measurement);
+            }
             if (this.state.updatefocusonframechange) {
                 this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
             }
@@ -398,6 +419,9 @@ export default class MolstarViewer extends Component {
         if (this.props.frame !== prevProps.frame) {
             this.handleFrameChange(this.props.frame);
         }
+        if (this.props.measurement !== prevProps.measurement) {
+            this.handleMeasurementChange(this.props.measurement);
+        }
         if (this.props.updatefocusonframechange !== prevProps.updatefocusonframechange) {
             this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
         }
@@ -418,6 +442,7 @@ export default class MolstarViewer extends Component {
             hover={this.state.hover}
             focus={this.state.focus}
             frame={this.state.frame}
+            measurement={this.state.measurement}
             updatefocusonframechange={this.state.updatefocusonframechange}
             updateselectiononframechange={this.state.updateselectiononframechange}
             />
@@ -473,6 +498,11 @@ MolstarViewer.propTypes = {
      * The trajectory frame in the molstar viewer.
      */
     frame: PropTypes.number,
+
+    /**
+     * The measurements in the molstar viewer.
+     */
+    measurement: PropTypes.any,
 
     /**
      * Update focus data when frame index have changed.

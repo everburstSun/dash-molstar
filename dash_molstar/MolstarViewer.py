@@ -51,6 +51,9 @@ Keyword arguments:
     displayed.   The layout is not allowed to be changed once the
     component has been initialized.
 
+- measurement (boolean | number | string | dict | list; optional):
+    The measurements in the molstar viewer.
+
 - selection (dict; optional):
     The structure region to be selected in the molstar viewer.
 
@@ -76,13 +79,14 @@ Keyword arguments:
         hover: typing.Optional[dict] = None,
         focus: typing.Optional[dict] = None,
         frame: typing.Optional[NumberType] = None,
+        measurement: typing.Optional[typing.Any] = None,
         updatefocusonframechange: typing.Optional[bool] = None,
         updateselectiononframechange: typing.Optional[bool] = None,
         **kwargs
     ):
-        self._prop_names = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
+        self._prop_names = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self._valid_wildcard_attributes =            []
-        self.available_properties = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
+        self.available_properties = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self.available_wildcard_properties =            []
         _explicit_args = kwargs.pop('_explicit_args')
         _locals = locals()

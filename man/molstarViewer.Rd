@@ -11,8 +11,8 @@ The Molstar viewer component for dash
 
 \usage{
 molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, frame=NULL,
-hover=NULL, layout=NULL, selection=NULL, style=NULL,
-updatefocusonframechange=NULL,
+hover=NULL, layout=NULL, measurement=NULL, selection=NULL,
+style=NULL, updatefocusonframechange=NULL,
 updateselectiononframechange=NULL)
 }
 
@@ -33,6 +33,8 @@ The data can be generated with python method `parse_molecule`.}
 \item{layout}{Named list. The layout of the molstar viewer. Determining what controls to be displayed. 
 
 The layout is not allowed to be changed once the component has been initialized.}
+
+\item{measurement}{Logical | numeric | character | named list | unnamed list. The measurements in the molstar viewer.}
 
 \item{selection}{Named list. The structure region to be selected in the molstar viewer.}
 
