@@ -468,14 +468,14 @@ class Target(object):
     def __init__(self, data: Dict = {}):
         self.__chains = []
         self.auth = False
-        self._parse_data(data)
-        self._boundary = None
-        self._valid = len(self.__chains) > 0
+        self.__parse_data(data)
+        self.__boundary = None
+        self.__valid = len(self.__chains) > 0
 
     def __len__(self):
         return len(self.__chains)
 
-    def _parse_data(self, data: Dict):
+    def __parse_data(self, data: Dict):
         chains = data.get('chains', [])
         if chains:
             for chain in chains:
@@ -486,7 +486,7 @@ class Target(object):
 
     @property
     def valid(self):
-        return self._valid
+        return self.__valid
 
     @property
     def chains(self) -> List[Chain]:
@@ -514,15 +514,15 @@ class Target(object):
     @property
     def boundary(self) -> Optional[Boundary]:
         if self.valid:
-            if not self._boundary:
+            if not self.__boundary:
                 coords = np.array([[atom.x, atom.y, atom.z] for atom in self.atoms])
                 box = Box(coords)
                 sphere = Sphere(coords)
-                self._boundary = Boundary(coords)
-        return self._boundary
+                self.__boundary = Boundary(coords)
+        return self.__boundary
 
     def find_chain(self, name) -> 'Chain':
-        if not self._valid:
+        if not self.__valid:
             raise ValueError('Cannot call find_chain on invalid Target object')
         for chain in self.__chains:
             if chain.name == name:
@@ -548,12 +548,15 @@ class Target(object):
     def add_chain(self, chain_name: str, residues: List = [], auth_name: str = ''):
         chain = Chain(chain_name, residues, auth_name)
         self.__chains.append(chain)
+        self.__valid = True
 
     def remove_chain(self, chain_name: Union[str, 'Chain']) -> bool:
         if isinstance(chain_name, Chain):
             try:
                 chain_index = self.__chains.index(chain_name)
                 del self.__chains[chain_index]
+                if not self.__chains:
+                    self.__valid = False
                 return True
             except ValueError: pass
         else:
@@ -561,6 +564,8 @@ class Target(object):
             if chain.valid:
                 chain_index = self.__chains.index(chain)
                 del self.__chains[chain_index]
+                if not self.__chains:
+                    self.__valid = False
                 return True
         return False
     
@@ -586,7 +591,7 @@ class Target(object):
                 for atom in residue.atoms:
                     atom_data = {
                         'name': atom.name,
-                        'number': atom.number,
+                        'index': atom.index,
                         'x': atom.x,
                         'y': atom.y,
                         'z': atom.z
