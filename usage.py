@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import dash
 import dash_bootstrap_components as dbc
@@ -242,6 +243,20 @@ app.layout = html.Div([
                         ),
                 ], width=6)
             ])
+        ])
+    ]),
+    html.Hr(style={'margin': '25px 0 25px 0'}),
+    # Measurement loading
+    dbc.Row([
+        html.H1("Add Measurement"),
+        dbc.Col([
+            dash_molstar.MolstarViewer(
+                id='viewer-4',style={'width': 'auto', 'height':'500px'},
+            )
+        ]),
+        dbc.Col([
+            html.Button(id='load_protein_measurement', children="Load Protein", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'}),
+            html.Button(id='add_measurement', children="Add Measurement", className="btn btn-primary", style={'padding': '5px', 'margin': '5px'})
         ])
     ])
 ], className='container')
@@ -512,21 +527,52 @@ def table_update_cascade(focus_chain, focus_res, sel_chain, sel_res, selection, 
             atoms = residue.atoms
             set_props('sel-table-atom', {'data': [{'atom': f"{atom.index}: {atom.name}"} for atom in atoms]})
 
-def add_measurement():
-    residue = molstar_helper.get_targets("H", 111)
-    atoms = [
-        molstar_helper.get_targets("H", 111, 890),
-        molstar_helper.get_targets("H", 111, 891),
-        molstar_helper.get_targets("H", 111, 892),
-        molstar_helper.get_targets("H", 112, 898),
+@callback(Output('viewer-4', 'data'),
+        Input('load_protein_measurement', 'n_clicks'),
+          prevent_initial_call=True)
+def load_protein_measurement(yes):
+    cartoon_rep = Representation('cartoon')
+    cartoon_target = molstar_helper.get_targets(chain="A", residue=[i for i in range(1, 36) if i != 25])
+    ball_and_stick_rep = Representation('ball-and-stick')
+    ball_and_stick_target = molstar_helper.get_targets(chain="A", residue=[i for i in range(24, 29)])
+    protein = molstar_helper.create_component("protein", cartoon_target, cartoon_rep)
+    measure = molstar_helper.create_component("measure", ball_and_stick_target, ball_and_stick_rep)
+    mol = molstar_helper.parse_molecule(os.path.join('tests', 'Villin.gro'), component=[protein, measure], preset={'kind': 'empty'})
+    return mol
+
+@callback(Output('viewer-4', 'measurement'),
+          Output('viewer-4', 'focus'),
+          Input('add_measurement', 'n_clicks'),
+          prevent_initial_call=True)
+def add_measurement(yes):
+    ball_and_stick_target = molstar_helper.get_targets(chain="A", residue=[i for i in range(24, 29)])
+    focus = molstar_helper.get_focus(ball_and_stick_target)
+
+    residue = molstar_helper.get_targets("A", 25)
+    distance_atoms = [
+        molstar_helper.get_targets("A", 24, 187),
+        molstar_helper.get_targets("A", 28, 220),
+    ]
+    angle_atoms = [
+        molstar_helper.get_targets("A", 28, 227),
+        molstar_helper.get_targets("A", 28, 225),
+        molstar_helper.get_targets("A", 28, 226),
+    ]
+    dihedral_atoms = [
+        molstar_helper.get_targets("A", 24, 186),
+        molstar_helper.get_targets("A", 25, 192),
+        molstar_helper.get_targets("A", 25, 193),
+        molstar_helper.get_targets("A", 25, 194),
+        molstar_helper.get_targets("A", 26, 202),
     ]
     measurements = [
         molstar_helper.get_measurement(residue, 'label'),
-        molstar_helper.get_measurement(atoms[:2], 'distance'),
-        molstar_helper.get_measurement(atoms[:3], 'angle'),
-        molstar_helper.get_measurement(atoms, 'dihedral')
+        molstar_helper.get_measurement(distance_atoms, 'distance'),
+        molstar_helper.get_measurement(angle_atoms, 'angle'),
+        molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral'),
+        molstar_helper.get_measurement(dihedral_atoms[1:], 'dihedral')
     ]
-    return measurements
+    return measurements, focus
 
 if __name__ == '__main__':
     app.run(debug=True)
