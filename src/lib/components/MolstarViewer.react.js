@@ -147,13 +147,15 @@ export default class MolstarViewer extends Component {
             this.setState({frame: frame_index});
         }
     }
-    handleMeasurementChange(measurements) {
+    async handleMeasurementChange(measurements) {
         if (measurements) {
             if (Array.isArray(measurements)) {
-                measurements.forEach((obj) => {
-                    this.addMeasurement(obj);
-                });
+                if (measurements[0].mode === 'set') this.viewer.clearMeasurement();
+                for (const obj of measurements) {
+                    await this.addMeasurement(obj);
+                }
             } else if (typeof measurements === "object") {
+                if (measurements.mode === 'set') this.viewer.clearMeasurement();
                 this.addMeasurement(measurements);
             }
         }
@@ -333,7 +335,7 @@ export default class MolstarViewer extends Component {
         }
         this.viewer.createComponent(component.label, targets, component.representation);
     }
-    addMeasurement(measurement) {
+    async addMeasurement(measurement) {
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
         if (model_index >= 0) {
             const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
@@ -344,7 +346,7 @@ export default class MolstarViewer extends Component {
                     parsed_targets.push(this.parseTargetsFromPython([target], id));
                 })
             }
-            this.viewer.addMeasurement(parsed_targets, measurement.type);
+            await this.viewer.addMeasurement(parsed_targets, measurement.type);
         }
     }
     componentDidMount() {

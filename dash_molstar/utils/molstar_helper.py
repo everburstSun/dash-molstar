@@ -418,7 +418,7 @@ def get_focus(targets, analyse=False):
         'analyse': analyse
     }
 
-def get_measurement(targets, type='label'):
+def get_measurement(targets, type='label', options=None, add=False):
     """
     Create a measurement for the specified targets. There are 6 types of measurements supported by molstar, 
     specify them in the `type` parameter.
@@ -432,6 +432,9 @@ def get_measurement(targets, type='label'):
         The 6 supported measurements are: label, orientation, plane, distance, angle, and dihedral. 
         For label, orientation, and plane, at least one target should be provided. For distances, angles, and dihedrals,
          2, 3, and 4 targets are needed respectively. (default: `'label'`)
+    `add` — bool (optional)
+        If set to False, existing measurements will be cleared before adding new ones.
+        Otherwise the new measurements will be added to molecule. (default: `False`)
 
     Returns
     -------
@@ -464,5 +467,6 @@ def get_measurement(targets, type='label'):
             raise TypeError(f"Target {t} is not a valid Target object. Use helper function `get_targets` to generate targets.")
     return {
         'targets': [t.to_dict() if isinstance(t, Target) else t for t in targets],
-        'type': type
+        'type': type,
+        'mode': 'add' if add else 'set',
     }

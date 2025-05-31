@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, List, Optional, Union
 import numpy as np
 
 class Box(object):
