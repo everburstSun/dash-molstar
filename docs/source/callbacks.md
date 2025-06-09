@@ -164,7 +164,7 @@ def updateBox(center_x,center_y,center_z,size_x,size_y,size_z):
     return box
 ```
 
-Specify the Bounding Box to control by the `label` parameter. The default value is `"Bounding Box"`. If there is no box in the viewer with the given name, a box will be created. Otherwise the existing one get updated.
+Specify which Bounding Box to control by the `label` parameter. The default value is `"Bounding Box"`. If there is no box in the viewer with the given name, a box will be created. Otherwise the existing one get updated.
 
 ### Property `focus`
 
@@ -363,7 +363,7 @@ def add_measurement(yes):
 ```
 
 :::{seealso}
-The definition of function ``get_measurement`` in the [](helper.md#loading-measurements) section.
+The definition of function ``get_measurement`` in the [](helper.md#adding-measurements) section.
 :::
 
 Each type of measurement requires certain numbers of targets, listed in the following table:

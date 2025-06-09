@@ -17,11 +17,11 @@ Users can easily loop over all the structural elements within one target, and ge
 
 | Member     | Type     | Description                                                                                        |
 | :--------- | :------- | :------------------------------------------------------------------------------------------------- |
-| `valid`    | `bool` | `True` if the Target object contains at least one chain, `False` otherwise.|
+| `valid`    | `bool` | `True` if the Target instance contains at least one chain, `False` otherwise.|
 | `chains`   | `List[Chain]` | A list of `Chain` objects belonging to this target.|
 | `residues` | `List[Residue]` | A flattened list of all valid `Residue` objects from all chains within this target.|
 | `atoms`    | `List[Atom]` | A flattened list of all valid `Atom` objects from all residues in all chains within this target|
-| `boundary` | `Optional[Boundary]` | A `Boundary` object representing the geometric boundary of all atoms in the target.|
+| `boundary` | `Optional[Boundary]` | A `Boundary` instance representing the geometric boundary of all atoms in the target.|
 
 ## Quick Start Example
 
@@ -61,7 +61,7 @@ def display_select(select):
 ```
 
 :::{note}
-For sending structural data to dash-molstar, the user should use the helper function `get_targets()` to generate *Target* instances. See the [](helper.md#targets) section.
+For sending structural data to dash-molstar, the user should use the helper function `get_targets()` to generate **Target** instances. See the [](helper.md#targets) section in helper function documentations.
 :::
 
 ### Search & Modify
@@ -109,18 +109,18 @@ print("Boundary sphere radius:", boundary.sphere.radius)
 
 ## Class Reference
 
-### Target Class
+### Target
 
-The `Target` class is the main entry point for interacting with molecular structure data. It encapsulates a collection of chains, which in turn contain residues and atoms. It provides methods for initializing a structure from a dictionary, accessing its components, finding specific elements, modifying the structure, and exporting it back to a dictionary format.
+The `Target` class is the main entry point for interacting with molecular structure data. It encapsulates a collection of chains, which in turn contain residues and atoms. It provides methods for initializing a structure from dash-molstar, accessing its components, finding specific elements, and modifying the selection.
 
 ```{eval-rst}
 .. py:class:: Target(data: dict = {})
 
-   Initializes a Target object.
+   Initializes a Target instance.
 
    :param data: A dictionary representing the molecular structure. 
-                It should be constructed from the data that were retrieved from the molstar viewer.
-                If `data` is empty or malformed, an invalid Target object will be created.
+                It should be constructed from the data retrieved from the dash-molstar.
+                If `data` is empty or malformed, an invalid Target instance will be created.
    :type data: dict, optional
 ```
 
@@ -128,30 +128,30 @@ The `Target` class is the main entry point for interacting with molecular struct
 
 - **`valid`**
   - Type: `bool`
-  - Description: Returns `True` if the Target object contains at least one chain, `False` otherwise. Indicates if the target is considered valid and has content.
+  - Description: Returns `True` if the Target instance contains at least one chain, `False` otherwise. Indicates if the target is considered valid and has content.
 
 - **`chains`**
   - Type: `List[Chain]`
-  - Description: A list of `Chain` objects belonging to this target. Modifications to this list directly affect the Target's chains.
+  - Description: A list of `Chain` instance belonging to this target. Modifications to this list directly affect the Target's chains.
 
 - **`residues`**
   - Type: `List[Residue]`
-  - Description: A list of all valid `Residue` objects from all chains within this target. This is a flattened list.
+  - Description: A list of all valid `Residue` instance from all chains within this target. This is a flattened list.
 
 - **`atoms`**
   - Type: `List[Atom]`
-  - Description: A list of all valid `Atom` objects from all residues in all chains within this target. This is a flattened list.
+  - Description: A list of all valid `Atom` instance from all residues in all chains within this target. This is a flattened list.
 
 - **`boundary`**
   - Type: `Optional[Boundary]`
-  - Description: A `Boundary` object representing the geometric boundary (both a bounding box and a bounding sphere) of all atoms in the target. Calculated on first access. Returns `None` if the target is invalid or contains no atoms with coordinates.
+  - Description: A `Boundary` instance representing the geometric boundary (both a bounding box and a bounding sphere) of all atoms in the target. Calculated on first access. Raises `ValueError` if the target is invalid or contains no atoms with coordinates.
 
 #### Methods
 
 ```{eval-rst}
 .. py:method:: Target.__len__()
 
-   Returns the number of chains in the Target object.
+   Returns the number of chains in the Target instance.
 
    :rtype: int
 ```
@@ -159,18 +159,18 @@ The `Target` class is the main entry point for interacting with molecular struct
 ```{eval-rst}
 .. py:method:: Target.find_chain(name: str) -> Chain
 
-   Finds and returns a `Chain` object by its name.
+   Finds and returns a ``Chain`` instance by its name.
 
    :param name: The name of the chain to find.
    :type name: str
-   :returns: The `Chain` object if found, otherwise an invalid `Chain` object (where `chain.valid` is `False`).
+   :returns: The ``Chain`` instance if found, otherwise an invalid `Chain` instance (where ``chain.valid`` is ``False``).
    :rtype: Chain
 ```
 
 ```{eval-rst}
 .. py:method:: Target.find_residue(chain_name: str, residue_number: int, ins_code: str = "") -> Residue
 
-   Finds and returns a `Residue` object within a specified chain by its number and optional insertion code.
+   Finds and returns a ``Residue`` instance within a specified chain by its number and optional insertion code.
 
    :param chain_name: The name of the chain to search within.
    :type chain_name: str
@@ -178,35 +178,35 @@ The `Target` class is the main entry point for interacting with molecular struct
    :type residue_number: int
    :param ins_code: The insertion code of the residue (optional).
    :type ins_code: str, optional
-   :returns: The `Residue` object if found, otherwise an invalid `Residue` object (where `residue.valid` is `False`).
+   :returns: The ``Residue`` instance if found, otherwise an invalid `Residue` instance (where ``residue.valid`` is ``False``).
    :rtype: Residue
 ```
 
 ```{eval-rst}
 .. py:method:: Target.find_atom(chain_name: str, residue_number: int, atom_name: str, ins_code: str = "") -> Atom
 
-   Finds and returns an `Atom` object within a specified residue of a specified chain.
+   Finds and returns an ``Atom`` instance within a specified residue of a specified chain.
 
-   :param chain_name: The name of the chain.
+   :param chain_name: The name of the chain to search within.
    :type chain_name: str
-   :param residue_number: The number of the residue.
+   :param residue_number: The number of the residue to search within.
    :type residue_number: int
    :param atom_name: The name of the atom.
    :type atom_name: str
    :param ins_code: The insertion code of the residue (optional).
    :type ins_code: str, optional
-   :returns: The `Atom` object if found, otherwise an invalid `Atom` object (where `atom.valid` is `False`).
+   :returns: The ``Atom`` instance if found, otherwise an invalid `Atom` instance (where ``atom.valid`` is ``False``).
    :rtype: Atom
 ```
 
 ```{eval-rst}
 .. py:method:: Target.add_chain(chain_name: str, residues: List = [], auth_name: str = '')
 
-   Adds a new chain to the Target object.
+   Adds a new chain to the Target instance.
 
    :param chain_name: The name for the new chain.
    :type chain_name: str
-   :param residues: A list of residue data dictionaries to initialize the chain with (optional).
+   :param residues: A list of residue data to initialize the chain with (optional). This should be automatically provided when parsing the return data from dash-molstar.
    :type residues: List, optional
    :param auth_name: The authentic name for the new chain (optional). If not provided, `chain_name` is used.
    :type auth_name: str, optional
@@ -215,9 +215,9 @@ The `Target` class is the main entry point for interacting with molecular struct
 ```{eval-rst}
 .. py:method:: Target.remove_chain(chain_name: Union[str, Chain]) -> bool
 
-   Removes a chain from the Target object, either by its name or by providing the `Chain` object itself.
+   Removes a chain from the Target instance, either by its name or by providing the `Chain` instance itself.
 
-   :param chain_name: The name of the chain to remove or the `Chain` object to remove.
+   :param chain_name: The name of the chain to remove or the `Chain` instance to remove.
    :type chain_name: Union[str, Chain]
    :returns: `True` if the chain was successfully removed, `False` otherwise.
    :rtype: bool
@@ -226,25 +226,25 @@ The `Target` class is the main entry point for interacting with molecular struct
 ```{eval-rst}
 .. py:method:: Target.to_dict() -> dict
 
-   Exports the current structure of the Target object (including all its chains, residues, and atoms) to a dictionary.
+   Exports the current structure of the Target instance (including all its chains, residues, and atoms) to a dictionary.
 
-   :returns: A dictionary representation of the Target, suitable for serialization or further processing.
+   :returns: A dictionary representation of the Target. It will be called automatically within helper functions.
    :rtype: dict
 ```
 
 
-### Chain Class
+### Chain
 
 The `Chain` class represents a single chain within a molecular structure, containing a list of residues. It provides methods for accessing and modifying its name, residues, and atoms within those residues.
 
 ```{eval-rst}
 .. py:class:: Chain(chain_name: str = None, residues: List[dict] = [], auth_name: str = '')
 
-   Initializes a Chain object.
+   Initializes a Chain instance. The instance will be valid if it's name is not None.
 
    :param chain_name: The name of the chain (e.g., 'A').
    :type chain_name: str, optional
-   :param residues: A list of dictionaries, where each dictionary represents a residue and its atoms.
+   :param residues: A list of dictionaries, where each dictionary represents a residue and its atoms. This should be automatically provided when parsing the return data from dash-molstar.
    :type residues: List[dict], optional
    :param auth_name: The authentic (author-assigned) name of the chain, if different from `chain_name`.
    :type auth_name: str, optional
@@ -281,20 +281,20 @@ The `Chain` class represents a single chain within a molecular structure, contai
 ```{eval-rst}
 .. py:method:: Chain.find_residue(number: int, ins_code: str = "") -> Residue
 
-   Finds and returns a `Residue` object by its number and optional insertion code.
+   Finds and returns a `Residue` instance by its number and optional insertion code.
 
    :param number: The number of the residue to find.
    :type number: int
    :param ins_code: The insertion code of the residue (optional).
    :type ins_code: str, optional
-   :returns: The `Residue` object if found, otherwise an invalid `Residue` object.
+   :returns: The ``Residue`` instance if found, otherwise an invalid `Residue` instance.
    :rtype: Residue
 ```
 
 ```{eval-rst}
 .. py:method:: Chain.find_atom(residue_number: int, atom_name: str, ins_code: str = "") -> Atom
 
-   Finds and returns an `Atom` object within a specified residue of this chain.
+   Finds and returns an `Atom` instance within a specified residue of this chain.
 
    :param residue_number: The number of the residue.
    :type residue_number: int
@@ -302,7 +302,7 @@ The `Chain` class represents a single chain within a molecular structure, contai
    :type atom_name: str
    :param ins_code: The insertion code of the residue (optional).
    :type ins_code: str, optional
-   :returns: The `Atom` object if found, otherwise an invalid `Atom` object.
+   :returns: The ``Atom`` instance if found, otherwise an invalid `Atom` instance.
    :rtype: Atom
 ```
 
@@ -321,16 +321,14 @@ The `Chain` class represents a single chain within a molecular structure, contai
    :type name: str, optional
    :param atoms: A list of atom data dictionaries to initialize the residue with.
    :type atoms: List[dict], optional
-   :returns: The newly created `Residue` object.
-   :rtype: Residue
 ```
 
 ```{eval-rst}
 .. py:method:: Chain.remove_residue(number: Union[int, Residue], ins_code: str = '') -> bool
 
-   Removes a residue from the chain, either by its number and insertion code or by providing the `Residue` object itself.
+   Removes a residue from the chain, either by its number and insertion code or by providing the `Residue` instance itself.
 
-   :param number: The number of the residue to remove or the `Residue` object.
+   :param number: The number of the residue to remove or the `Residue` instance.
    :type number: Union[int, Residue]
    :param ins_code: The insertion code of the residue (if removing by number).
    :type ins_code: str, optional
@@ -338,14 +336,14 @@ The `Chain` class represents a single chain within a molecular structure, contai
    :rtype: bool
 ```
 
-### Residue Class
+### Residue
 
 The `Residue` class represents a single residue (e.g., an amino acid or nucleotide) within a chain, containing a list of atoms.
 
 ```{eval-rst}
 .. py:class:: Residue(index: int = None, number: int = None, ins_code: str = '', name: str = '', atoms: List[dict] = [])
 
-   Initializes a Residue object.
+   Initializes a Residue instance. The instance will be valid if it's index is not None.
 
    :param index: The index of the residue within its chain.
    :type index: int, optional
@@ -355,7 +353,7 @@ The `Residue` class represents a single residue (e.g., an amino acid or nucleoti
    :type ins_code: str, optional
    :param name: The name of the residue (e.g., 'GLY', 'A').
    :type name: str, optional
-   :param atoms: A list of dictionaries, where each dictionary represents an atom.
+   :param atoms: A list of dictionaries, where each dictionary represents an atom. This should be automatically provided when parsing the return data from dash-molstar.
    :type atoms: List[dict], optional
 ```
 
@@ -393,11 +391,11 @@ The `Residue` class represents a single residue (e.g., an amino acid or nucleoti
 ```{eval-rst}
 .. py:method:: Residue.find_atom(name: str) -> Atom
 
-   Finds and returns an `Atom` object by its name within this residue.
+   Finds and returns an ``Atom`` instance by its name within this residue.
 
    :param name: The name of the atom to find (e.g., 'CA').
    :type name: str
-   :returns: The `Atom` object if found, otherwise an invalid `Atom` object.
+   :returns: The ``Atom`` instance if found, otherwise an invalid `Atom` instance.
    :rtype: Atom
 ```
 
@@ -416,29 +414,27 @@ The `Residue` class represents a single residue (e.g., an amino acid or nucleoti
    :type y: float, optional
    :param z: The z-coordinate of the new atom.
    :type z: float, optional
-   :returns: The newly created `Atom` object.
-   :rtype: Atom
 ```
 
 ```{eval-rst}
 .. py:method:: Residue.remove_atom(name: Union[str, Atom]) -> bool
 
-   Removes an atom from the residue, either by its name or by providing the `Atom` object itself.
+   Removes an atom from the residue, either by its name or by providing the ``Atom`` instance itself.
 
-   :param name: The name of the atom to remove or the `Atom` object.
+   :param name: The name of the atom to remove or the `Atom` instance.
    :type name: Union[str, Atom]
    :returns: `True` if the atom was successfully removed, `False` otherwise.
    :rtype: bool
 ```
 
-### Atom Class
+### Atom
 
 The `Atom` class represents a single atom within a residue, storing its properties like name, index, and coordinates.
 
 ```{eval-rst}
 .. py:class:: Atom(index: int = None, name: str = None, x: float = None, y: float = None, z: float = None)
 
-   Initializes an Atom object.
+   Initializes an Atom instance. The instance will be valid if the atom has a name.
 
    :param index: The index of the atom.
    :type index: int, optional
@@ -475,7 +471,7 @@ The `Atom` class represents a single atom within a residue, storing its properti
 
 ### Boundary, Box, and Sphere Classes
 
-These classes are used to define and calculate the geometric boundaries of a set of atoms. The `Target.boundary` property returns a `Boundary` object.
+These classes are used to define and calculate the geometric boundaries of a set of atoms. The `Target.boundary` property returns a `Boundary` instance.
 
 #### Boundary Class
 
@@ -484,7 +480,7 @@ The `Boundary` class calculates and holds the bounding box and bounding sphere f
 ```{eval-rst}
 .. py:class:: Boundary(coords: np.ndarray = None)
 
-   Initializes a Boundary object.
+   Initializes a Boundary instance.
 
    :param coords: A NumPy array of shape (N, 3) representing N atomic coordinates.
    :type coords: np.ndarray, optional
@@ -494,10 +490,10 @@ The `Boundary` class calculates and holds the bounding box and bounding sphere f
 
 - **`box`**
   - Type: `Optional[Box]`
-  - Description: A `Box` object representing the minimal bounding box enclosing all provided coordinates. `None` if no coordinates were provided.
+  - Description: A `Box` instance representing the minimal bounding box enclosing all provided coordinates. `None` if no coordinates were provided.
 - **`sphere`**
   - Type: `Optional[Sphere]`
-  - Description: A `Sphere` object representing the minimal bounding sphere enclosing all provided coordinates. `None` if no coordinates were provided.
+  - Description: A `Sphere` instance representing the minimal bounding sphere enclosing all provided coordinates. `None` if no coordinates were provided.
 
 #### Box Class
 
@@ -506,7 +502,7 @@ The `Box` class defines an axis-aligned bounding box.
 ```{eval-rst}
 .. py:class:: Box(min_coords: tuple[float, float, float] = None, max_coords: tuple[float, float, float] = None)
 
-   Initializes a Box object.
+   Initializes a Box instance.
 
    :param min_coords: A tuple `(min_x, min_y, min_z)` representing the minimum coordinates of the box.
    :type min_coords: tuple[float, float, float], optional
@@ -534,7 +530,7 @@ The `Box` class defines an axis-aligned bounding box.
 ```{eval-rst}
 .. py:method:: Box.to_sphere() -> Sphere
 
-   Calculates and returns a `Sphere` object that minimally encloses this box.
+   Calculates and returns a `Sphere` instance that minimally encloses this box.
 
    :returns: The bounding sphere.
    :rtype: Sphere
@@ -547,7 +543,7 @@ The `Sphere` class defines a sphere by its center and radius.
 ```{eval-rst}
 .. py:class:: Sphere(center: tuple[float, float, float] = None, radius: float = None)
 
-   Initializes a Sphere object.
+   Initializes a Sphere instance.
 
    :param center: A tuple `(x, y, z)` representing the center of the sphere.
    :type center: tuple[float, float, float], optional
@@ -569,7 +565,7 @@ The `Sphere` class defines a sphere by its center and radius.
 ```{eval-rst}
 .. py:method:: Sphere.to_box() -> Box
 
-   Calculates and returns an axis-aligned `Box` object that minimally encloses this sphere.
+   Calculates and returns an axis-aligned `Box` instance that minimally encloses this sphere.
 
    :returns: The bounding box.
    :rtype: Box
