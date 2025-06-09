@@ -568,9 +568,9 @@ def add_measurement(yes):
     measurements = [
         molstar_helper.get_measurement(residue, 'label'),
         molstar_helper.get_measurement(distance_atoms, 'distance'),
-        # molstar_helper.get_measurement(angle_atoms, 'angle'),
-        # molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral'),
-        # molstar_helper.get_measurement(dihedral_atoms[1:], 'dihedral')
+        molstar_helper.get_measurement(angle_atoms, 'angle'),
+        molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral'),
+        molstar_helper.get_measurement(dihedral_atoms[1:], 'dihedral')
     ]
     return measurements, focus
 
