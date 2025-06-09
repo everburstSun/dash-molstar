@@ -516,10 +516,9 @@ class Target(object):
         if self.valid:
             if not self.__boundary:
                 coords = np.array([[atom.x, atom.y, atom.z] for atom in self.atoms])
-                box = Box(coords)
-                sphere = Sphere(coords)
                 self.__boundary = Boundary(coords)
-        return self.__boundary
+            return self.__boundary
+        raise ValueError('Cannot access boundary on invalid Target object')
 
     def find_chain(self, name) -> 'Chain':
         if not self.__valid:
