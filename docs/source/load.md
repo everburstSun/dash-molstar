@@ -2,9 +2,10 @@
 :maxdepth: 2
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations
 ```
 
@@ -69,7 +70,7 @@ app.layout = html.Div(
 
 ### General options
 
-The general options are used to control the look of the viewer object, including whether to show some control panels or buttons. The avaliable options are listed as follows. If the keys are not specified in `layout` parameter, the default value will be applied.
+The general options are used to control the look of the viewer object, including whether to show some control panels or buttons. The avaliable options are listed as follows. If the keys are not specified in `layout` argument, the default value will be applied.
 
 | Keys | Optional Values | Default Value |
 | --- | --- | --- |
@@ -102,6 +103,10 @@ The general options are used to control the look of the viewer object, including
 
 :::{note}
 The layout of viewer should not be changed via callbacks.
+:::
+
+:::{note}
+If `manualReset` is set to `False`, the camera will not be reset when load new structures into the viewer.
 :::
 
 ### Customize the canvas

@@ -80,7 +80,8 @@ Or from a remote URL:
    :caption: Contents:
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations

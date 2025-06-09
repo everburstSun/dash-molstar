@@ -2,15 +2,18 @@
 :maxdepth: 2
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations
 ```
 
 # Representations
 
 The representations are the style of molecule in molstar viewer, e.g. cartoon, ball-and-stick. Representations should be assigned to a certain component. A component can have multiple representations. 
+
+![Components and representations](_static/components.png){width=289px align=center}
 
 In *dash-molstar*, users can import the class `Representation` to control all the settings in their representations:
 
@@ -50,6 +53,8 @@ The default color scheme in molstar is by **chain-id**, whereas the default size
 
 Each type, color and size comes with a lot of parameters. They can be set by the class function `set_type_params()`, `set_color_params()` and `set_size_params()`, respectively.
 
+By default, molstar viewer will analyse the loaded structure and create a default cartoon representations for everything. If you don't want this default representation, set `preset={'kind':'empty'}` when you create the `data` object.
+
 For example, if you wish to create a look that the surface is wrapping the backbone, you can write your code as follows:
 
 ```py
@@ -58,14 +63,15 @@ from dash import Dash, html
 from dash_molstar.utils import molstar_helper
 from dash_molstar.utils.representations import Representation
 
-# select some residues
-chain_A = molstar_helper.get_targets(chain='A', residue=list(range(42,77)))
-
 # create and configure representations
+# here let's do cartoon and gaussian surface
 cartoon = Representation(type='cartoon', color='secondary-structure')
 surface = Representation(type='gaussian-surface', color='uniform')
 surface.set_type_params({'alpha': 0.1, 'radiusOffset': 0.3})
 surface.set_color_params({'value': 0x009CE0})
+
+# select residues 42-76 in chain A
+chain_A = molstar_helper.get_targets(chain='A', residue=list(range(42,77)))
 
 # create a component with the given representation on the target
 component = molstar_helper.create_component(label='Protein', targets=chain_A, 
