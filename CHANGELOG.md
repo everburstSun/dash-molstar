@@ -1,6 +1,6 @@
 # dash-molstar Changelog
 
-## [1.3.0] - 2025-05-31
+## [1.3.0] - 2025-06-10
 ### Changed
 - Synced molstar fork with rcsb-molstar to 2.11.4
 - Allow user to control whether to reset camera on new structure loading
