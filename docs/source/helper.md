@@ -171,7 +171,7 @@ This preset applies the ValidationReportGeometryQualityPreset, which is typicall
 - `showClashes` (bool): Optional. If true, explicitly shows clashes.
 
 #### symmetry
-This preset is used to display assembly symmetries.
+This preset is used to display assembly symmetries. In symmetry mode, `assemblyId` also has to be specified.
 - `symmetryIndex` (int): Optional. Specifies the index of the symmetry to be displayed.
 
 #### feature
@@ -198,9 +198,9 @@ There is no additional option for this kind beyond the general ones.
 #### motif
 This preset is designed to highlight structural motifs. It attempts to determine the correct assembly ID if not provided.
 It uses RcsbSuperpositionRepresentationPreset with selection expressions to highlight the motif, potentially with a specific color and transparency for the rest of the structure.
-- `label` (str): Optional. A label for the motif.
+- `label` (str): Optional. The prefix for component names.
 - `targets` (List[Target]): A list of targets that define the motif.
-- `color` (number): Optional. A specific color to apply to the motif.
+- `color` (number): Optional. A hex value of color to apply to the motif.
 
 #### nakb
 This preset applies an 'auto' representation but specifically uses a 'nakb' (Nucleic Acid Knowledge Base) coloring theme.
@@ -210,8 +210,8 @@ There is no additional option for this kind beyond the general ones.
 #### glygen
 This preset is for visualizing glycosylation features.
 - `label` (str): Optional. A label for the GlyGen visualization.
-- `focus` (Target): The primary target to focus on.
-- `glycosylation` (List[Target]): A list of targets representing glycosylation sites or glycans.
+- `focus` (Target): The chain to highlight. The target will only be processed at the chain level. **Note**: this `focus` key is not used to focus the camera on the target, but to focus your attention on a chain.
+- `glycosylation` (List[Target]): Glycosylations to be highlighted. The targets will only be processed at the chain level.
 
 ## Loading trajectories
 
