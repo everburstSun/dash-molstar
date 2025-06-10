@@ -1,6 +1,5 @@
 import json
 import os
-import time
 
 import dash
 import dash_bootstrap_components as dbc
