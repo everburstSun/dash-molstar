@@ -1,5 +1,25 @@
 # dash-molstar Changelog
 
+## [1.3.0] - 2025-06-10
+### Changed
+- Synced molstar fork with rcsb-molstar to 2.11.4
+- Allow user to control whether to reset camera on new structure loading
+- `hover` now becomes a standalone property rather than hiding behind `selection`, since 
+now the user can retrieve selected structures from the viewer.
+
+### Added
+- Add measurements
+- Change the background color when loading the viewer
+- Retrive selected items from the viewer
+- Retrive currently focused items from the viewer
+- Added a `Target` class for easier target selection and analysis
+- Allow frame selection of a trajectory
+- Retrive current frame index from the viewer
+- Supported `psf`, `prmtop` and `top` formats for trajectory
+
+### Bug fixes
+- Fixed the representation loading problem when working with trajectories
+
 ## [1.2.1] - 2024-11-09
 ### Changed
 - Making named params as a classmethod

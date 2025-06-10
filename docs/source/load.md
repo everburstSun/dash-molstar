@@ -2,9 +2,10 @@
 :maxdepth: 2
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations
 ```
 
@@ -69,7 +70,7 @@ app.layout = html.Div(
 
 ### General options
 
-The general options are used to control the look of the viewer object, including whether to show some control panels or buttons. The avaliable options are listed as follows. If the keys are not specified in `layout` parameter, the default value will be applied.
+The general options are used to control the look of the viewer object, including whether to show some control panels or buttons. The avaliable options are listed as follows. If the keys are not specified in `layout` argument, the default value will be applied.
 
 | Keys | Optional Values | Default Value |
 | --- | --- | --- |
@@ -84,9 +85,10 @@ The general options are used to control the look of the viewer object, including
 |"showVolumeStreamingControls"|True, False|False|
 |"showAssemblySymmetryControls"|True, False|False|
 |"showValidationReportControls"|True, False|False|
+|"showPredictedAlignedErrorPlot"|True, False|True|
 |"showMembraneOrientationPreset"|True, False|False|
 |"showNakbColorTheme"|True, False|False|
-|"detachedFromSierra"|True, False|True|
+|"detachedFromSierra"|True, False|False|
 |"layoutIsExpanded"|True, False|False|
 |"layoutShowControls"|True, False|False|
 |"layoutControlsDisplay"|'outside', 'portrait', 'landscape' and 'reactive'|'reactive'|
@@ -94,10 +96,17 @@ The general options are used to control the look of the viewer object, including
 |"layoutShowLog"|True, False|False|
 |"viewportShowExpand"|True, False|True|
 |"viewportShowSelectionMode"|True, False|True|
+|"backgroundColor"|Colors|white|
+|"manualReset"|True, False|False|
+|"pickingAlphaThreshold"|float|0.5|
 |"showWelcomeToast"|True, False|False|
 
 :::{note}
 The layout of viewer should not be changed via callbacks.
+:::
+
+:::{note}
+If `manualReset` is set to `False`, the camera will not be reset when load new structures into the viewer.
 :::
 
 ### Customize the canvas
@@ -177,12 +186,17 @@ The customizable keys and their corresponding values are listed as follows.
             - *radius* (float) – Ranging from 0 to 20.
             - *bias* (float) – Ranging from 0 to 3.
             - *blurKernelSize* (int) – Ranging from 1 to 25.
+            - *blurDepthBias* (float) – Ranging from 0.1 to 1.
             - *resolutionScale* (int) – Ranging from 0.1 to 1.
+            - *multiScale* (NamedParams)
+                - *off* (None as NamedParams) – Multi scale disabled.
+                - *on* (dict as NamedParams) – Unknown parameters.
+            - *color* (Color) – Color entries in hex values.
+            - *transparentThreshold* (float) – Ranging from 0.1 to 1.
     - *shadow* (NamedParams) – Shadow settings.
         - *off* (None as NamedParams) – Shadows disabled.
         - *on* (dict) – Shadows enabled with parameters:
             - *steps* (int) – Ranging from 1 to 64.
-            - *bias* (any)
             - *maxDistance* (int) – Ranging from 0 to 256.
             - *tolerance* (float) – Ranging from 0 to 10.
     - *outline* (NamedParams) – Outline settings.
@@ -192,6 +206,15 @@ The customizable keys and their corresponding values are listed as follows.
             - *threshold* (float) – Ranging from 0.01 to 1.
             - *color* (Color) – Color entries in hex values.
             - *includeTransparent* (boolean)
+    - *dof* (NamedParams) – dof settings.
+        - *off* (None as NamedParams) – dof disabled.
+        - *on* (dict) – dof enabled with properties:
+            - *blurSize* (int) – Ranging from 1 to 32.
+            - *blurSpread* (float) – Ranging from 0.01 to 10.
+            - *inFocus* (int) – Ranging from -5000 to 5000.
+            - *PPM* (float) – Ranging from 0 to 5000.
+            - *center* (string)
+            - *mode* (string)
     - *antialiasing* (NamedParams) – Antialiasing settings.
         - *off* (None as NamedParams) – Antialiasing disabled.
         - *smaa* (dict) – SMAA antialiasing with *edgeThreshold* and *maxSearchSteps* (any).
@@ -199,6 +222,13 @@ The customizable keys and their corresponding values are listed as follows.
             - *edgeThresholdMin*, *edgeThresholdMax*, *iterations*, *subpixelQuality* (any).
     - *background* (dict) – Background variant configuration.
         - *variant* (any) – Background variant settings.
+    - *bloom* (NamedParams) – Background variant configuration.
+        - *off* (None as NamedParams) – Blooming disabled.
+        - *on* (dict) – Blooming enabled with properties:
+            - *strength* (float) – Ranging from 0 to 3.
+            - *radius* (float) – Ranging from 0 to 1.
+            - *threshold* (int) – Unknown.
+            - *mode* (string) – *Luminosity* or *Emissive*.
 
 - **marking** (dict) – Marking settings.
     - *enabled* (boolean) – Enables marking.

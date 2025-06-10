@@ -2,9 +2,10 @@
 :maxdepth: 2
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations
 ```
 
@@ -12,7 +13,11 @@
 
 The representations are the style of molecule in molstar viewer, e.g. cartoon, ball-and-stick. Representations should be assigned to a certain component. A component can have multiple representations. 
 
-In *dash-molstar*, users can import the class `Representation` to control all the settings in their representations:
+![Components and representations](_static/components.png){width=289px align=center}
+
+The `Representation` class is used to define the visual style of molecular structures in the molstar viewer. It allows customization of the representation type (e.g., cartoon, ball-and-stick), color scheme, and size scheme, along with their specific parameters. 
+
+In *dash-molstar*, users can import the class `Representation` to control all the settings for their representations:
 
 ```py
 from dash_molstar.utils.representations import Representation
@@ -48,7 +53,13 @@ rep.color = 'residue-name'
 
 The default color scheme in molstar is by **chain-id**, whereas the default size scheme vary with representation type. `color` and `size` can also be set to `None` if you want to disgard all the changes on them in your instance. This way they will fall back to molstar default. 
 
-Each type, color and size comes with a lot of parameters. They can be set by the class function `set_type_params()`, `set_color_params()` and `set_size_params()`, respectively.
+Each type, color and size comes with a lot of parameters. They can be set by the class member function `set_type_params()`, `set_color_params()` and `set_size_params()`, respectively.
+
+By default, molstar viewer will analyse the loaded structure and create a default cartoon representations for everything. If you don't want this default representation, set `preset={'kind':'empty'}` when you create the `data` object.
+
+:::{seealso}
+See the detailed explaination of `preset`, go to the [](helper.md#preset) section.
+:::
 
 For example, if you wish to create a look that the surface is wrapping the backbone, you can write your code as follows:
 
@@ -58,14 +69,15 @@ from dash import Dash, html
 from dash_molstar.utils import molstar_helper
 from dash_molstar.utils.representations import Representation
 
-# select some residues
-chain_A = molstar_helper.get_targets(chain='A', residue=list(range(42,77)))
-
 # create and configure representations
+# here let's do cartoon and gaussian surface
 cartoon = Representation(type='cartoon', color='secondary-structure')
 surface = Representation(type='gaussian-surface', color='uniform')
 surface.set_type_params({'alpha': 0.1, 'radiusOffset': 0.3})
 surface.set_color_params({'value': 0x009CE0})
+
+# select residues 42-76 in chain A
+chain_A = molstar_helper.get_targets(chain='A', residue=list(range(42,77)))
 
 # create a component with the given representation on the target
 component = molstar_helper.create_component(label='Protein', targets=chain_A, 
@@ -133,6 +145,117 @@ surface.save_config('surface.json')
 
 # load the saved JSON
 new_surface = Representation.from_config('surface.json')
+```
+
+## Class Reference
+
+```{eval-rst}
+.. py:class:: Representation(type: str = 'cartoon', color: Optional[str] = None, size: Optional[str] = None)
+
+   Initializes a Representation object.
+
+   :param type: The type of representation (e.g., 'cartoon', 'ball-and-stick'). Defaults to 'cartoon'.
+   :type type: str, optional
+   :param color: The color scheme to apply (e.g., 'chain-id', 'element-symbol'). Defaults to Molstar's default.
+   :type color: Optional[str], optional
+   :param size: The size scheme to apply (e.g., 'uniform', 'physical'). Defaults to Molstar's default.
+   :type size: Optional[str], optional
+   :raises ValueError: If an invalid type, color, or size value is provided.
+   :raises FileNotFoundError: If the `representation_params.json` definition file cannot be located.
+   :raises json.JSONDecodeError: If `representation_params.json` is malformed.
+```
+
+### Properties
+
+- **`type`**
+  - Type: `str`
+  - Description: Gets or sets the main representation type (e.g., 'cartoon', 'ball-and-stick'). Setting this property will reset any previously set `type_params`.
+  - Raises `ValueError` if an invalid type is assigned.
+
+- **`color`**
+  - Type: `Optional[str]`
+  - Description: Gets or sets the color scheme (e.g., 'chain-id', 'hydrophobicity'). Can be set to `None` to use Molstar's default coloring for the chosen type. Setting this property will reset any previously set `color_params`.
+  - Raises `ValueError` if an invalid color scheme is assigned.
+
+- **`size`**
+  - Type: `Optional[str]`
+  - Description: Gets or sets the size scheme (e.g., 'uniform', 'uncertainty'). Can be set to `None` to use Molstar's default sizing for the chosen type. Setting this property will reset any previously set `size_params`.
+  - Raises `ValueError` if an invalid size scheme is assigned.
+
+### Methods
+
+```{eval-rst}
+.. py:method:: Representation.set_type_params(params: Dict[str, Any])
+
+   Sets the parameters for the current representation `type`.
+
+   :param params: A dictionary of parameters specific to the current `type`.
+   :type params: Dict[str, Any]
+   :raises ValueError: If a parameter key is not valid for the current `type`.
+```
+
+```{eval-rst}
+.. py:method:: Representation.set_color_params(params: Dict[str, Any])
+
+   Sets the parameters for the current `color` scheme.
+
+   :param params: A dictionary of parameters specific to the current `color` scheme.
+   :type params: Dict[str, Any]
+   :raises ValueError: If `color` has not been set or if a parameter key is not valid for the current `color` scheme.
+```
+
+```{eval-rst}
+.. py:method:: Representation.set_size_params(params: Dict[str, Any])
+
+   Sets the parameters for the current `size` scheme.
+
+   :param params: A dictionary of parameters specific to the current `size` scheme.
+   :type params: Dict[str, Any]
+   :raises ValueError: If `size` has not been set or if a parameter key is not valid for the current `size` scheme.
+```
+
+```{eval-rst}
+.. py:staticmethod:: Representation.np(name, params=None)
+
+   Helper function to generate `NamedParams` objects, which are used for parameters that have a 'name' and a nested 'params' dictionary.
+
+   :param name: The name of the NamedParams instance.
+   :type name: str
+   :param params: The nested parameters for this NamedParams instance. Defaults to `None`.
+   :type params: Any, optional
+   :returns: A dictionary formatted as `{'name': name, 'params': params}`.
+   :rtype: dict
+```
+
+```{eval-rst}
+.. py:method:: Representation.to_dict() -> Dict[str, Any]
+
+   Exports the current representation configuration to a dictionary. This dictionary is suitable for use with the `dash_molstar.MolstarViewer` component.
+
+   :returns: A dictionary containing the `type`, `color` (if set), `size` (if set), and their respective parameters.
+   :rtype: Dict[str, Any]
+```
+
+```{eval-rst}
+.. py:method:: Representation.save_config(filename: str)
+
+   Saves the current representation configuration to a JSON file. If the filename does not end with '.json', it will be appended.
+
+   :param filename: The name of the JSON file to save the configuration to.
+   :type filename: str
+```
+
+```{eval-rst}
+.. py:classmethod:: Representation.from_config(cls, filename: str) -> Representation
+
+   Loads a representation configuration from a JSON file and constructs a new `Representation` instance.
+
+   :param filename: The name of the JSON file to load the configuration from.
+   :type filename: str
+   :returns: A new `Representation` instance configured according to the JSON file.
+   :rtype: Representation
+   :raises FileNotFoundError: If the specified JSON file cannot be found.
+   :raises json.JSONDecodeError: If the JSON file is malformed.
 ```
 
 ## Representation parameters

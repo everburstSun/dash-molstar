@@ -2,9 +2,10 @@
 :maxdepth: 2
 
    load
-   parameters
    helper
+   properties
    callbacks
+   targets
    representations
 ```
 
@@ -16,7 +17,7 @@ Data provided to molstar viewer should be prepared by helper functions.
 ```{eval-rst}
 .. py:function:: parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'})
    
-   Parse the molecule for the `data` parameter of the molstar viewer.
+   Parse the molecule for the `data` property of the dash-molstar.
 
    :param inp: The file path to the molecule or the file content of the molecule.
                It can be either a string (file path) or a file-like object.
@@ -25,7 +26,7 @@ Data provided to molstar viewer should be prepared by helper functions.
    :type inp: str | file-like object
 
    :param fmt: The format of the input molecule. Supported formats include 
-               `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`.
+               `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data`.
                (default: ``None``)
    :type fmt: str, optional
 
@@ -38,7 +39,7 @@ Data provided to molstar viewer should be prepared by helper functions.
                   (default: ``{'kind': 'standard'}``)
    :type preset: dict, optional
 
-   :returns: The value for the ``data`` parameter.
+   :returns: The value for the ``data`` property.
    :rtype: dict
 
    :raises RuntimeError: If the input format is not supported by molstar viewer.
@@ -60,21 +61,21 @@ app.layout = html.Div(
 )
 ```
 
-Each time the `data` parameter was updated with molecules, the canvas will be cleaned before loading any new structures.
+Each time the `data` property was updated with molecules, the canvas will be cleaned before loading any new structures.
 
 ```{eval-rst}
 .. function:: parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'})
 
-   Parse the URL for the `data` parameter of the molstar viewer. 
+   Parse the URL for the `data` property of the molstar viewer. 
    The URL can be either a structure or a molstar state/session file. If a state/session is provided, the `mol` parameter should be set to `False`.
 
    :param url: The URL to the content to be passed to molstar.
    :type url: str
 
    :param fmt: The format of the input content. Supported formats for structures include 
-               `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`. 
+               `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data`.
                Supported formats for states and sessions include `json`, `molj`, `molx`, `zip`.
-               Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`.
+               Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`, "lammpstrj".
                (default: ``None``)
    :type fmt: str, optional
 
@@ -83,13 +84,12 @@ Each time the `data` parameter was updated with molecules, the canvas will be cl
    :type component: dict | List[dict], optional
 
    :param mol: **DEPRECATED**
-   :type mol: bool, optional
 
    :param preset: The preset for molstar on how to display the loaded structure file.
                   (default: ``{'kind': 'standard'}``)
    :type preset: dict, optional
 
-   :returns: The value for the ``data`` parameter.
+   :returns: The value for the ``data`` property.
    :rtype: dict
 
 ``` 
@@ -108,7 +108,7 @@ app.layout = html.Div(
 )
 ```
 
-If you would like molstar itself send requests to fetch files, i.e. access your custom APIs, pass url to this function and the return value is for `data` parameter. If a static file was provided, this function will automatically infer the file format from the url. Otherwise you should specify the format on your own. Currently, only text files are supported. Do not use a gzip archive.
+If you would like molstar itself send requests to fetch files, i.e. access your custom APIs, pass url to this function and the return value is for `data` property. If a static file was provided, this function will automatically infer the file format from the url. Otherwise you should specify the format on your own. Currently, only text files are supported. Do not use a gzip archive.
 
 You can also load a molstar state or session file with this function. The input `component` will be ignored. 
 
@@ -125,6 +125,93 @@ app.layout = html.Div(
    )
 )
 ```
+
+### preset
+
+The preset argument can help you control the initial behaviour of molstar when it loads a structure. The default value of preset is `{'kind': 'standard'}`. `kind` is also the only mandatory key in this dict. 
+
+Available options for `kind` are: `standard` | `empty` | `alignment` | `validation` | `symmetry` | `feature` | `density` | `membrane` | `feature-density` | `motif` | `nakb` | `glygen`
+
+Other than `kind`, there are three other general keys but optional:
+
+- `assemblyId` (str): The assembly mode to show in the crystal
+- `modelIndex` (int): The first frame to show when you load a trajectory
+- `plddt` (str): plddt control option, can be 'off' | 'single-chain' | 'on'
+
+An example for `assemblyId`: the main protease of SARS-COVID-2 (PDB ID 6LU7) was resolved as a homodimer, but if you load the protein with the default parameter, only the monomer will be displayed. To show the homodimer, you have to pass the assemblyId as well:
+
+```py
+data = molstar_helper.parse_url(url='https://files.rcsb.org/download/6LU7.pdb', 
+                                preset={
+                                   'kind': 'standard',
+                                   'assemblyId': '1'
+                                })
+```
+
+Each type of `kind` may have some additional options relate to it:
+
+#### standard
+The default behaviour. There is no additional option for this kind beyond the general ones.
+
+It applies an 'auto' representation to the structure. If the structure has pLDDT information and is a single chain (or pLDDT is forced 'on'), it will use a pLDDT confidence coloring theme.
+
+#### empty
+Disable any display. There is no additional option for this kind beyond the general ones.
+
+When you load a protein into the viewer, it will create a cartoon representation for everything. Sometimes you may want to have sophisticated control for the representation, and the default one should thus be disabled. You can pass `{'kind': 'empty'}` to the preset argument.
+
+#### alignment
+This preset is used for superposing multiple structures or parts of structures. It creates a single structure component from transformed substructures using FlexibleStructureFromModel. It applies custom coloring based on the provided colors and targets in the parameters.
+- `targets` (List[Target]): Optional. A list of targets to be included in the alignment. Each target can optionally have a transformation matrix.
+- `colors` (List[{value: number, targets: List[Target]}]): A list defining how different parts of the aligned structures should be colored. Each entry specifies a color value and the targets that should receive this color.
+
+#### validation
+This preset applies the ValidationReportGeometryQualityPreset, which is typically used to visualize geometry validation reports (e.g., clashes, bond lengths, angles).
+- `colorTheme` (str): Optional. Specifies a color theme to use for the validation report.
+- `showClashes` (bool): Optional. If true, explicitly shows clashes.
+
+#### symmetry
+This preset is used to display assembly symmetries. In symmetry mode, `assemblyId` also has to be specified.
+- `symmetryIndex` (int): Optional. Specifies the index of the symmetry to be displayed.
+
+#### feature
+This preset focuses on a specific target within the structure. If the target is not found in the current assembly, it attempts to switch to the model coordinates and re-locate the target.
+- `target` (Target): The specific molecular target to focus on.
+
+#### density
+This preset initializes volume streaming for electron density maps. It shows a toast message instructing the user on how to interact with the density (click on residue).
+
+There is no additional option for this kind beyond the general ones.
+
+#### feature-density
+This combines the functionality of feature and density. It focuses on a specific target feature. It initializes volume streaming around that feature, allowing customization of the radius, hidden channels, and wireframe display for the density.
+- `target` (Target): The specific molecular target to focus on and around which density will be shown.
+- `radius` (float): Optional. The radius (e.g., in Angstroms) around the target for which to display density. Defaults to 5 if not specified.
+- `hiddenChannels` (List[str]): Optional. A list of density map channel names (e.g., '2fo-fc', 'fo-fc(+ve)') that should be initially hidden.
+- `wireframe` (bool): Optional. If true, displays the density map as a wireframe. Defaults to true if not specified.
+
+#### membrane
+This preset applies the MembraneOrientationPreset to visualize membrane planes. It resets the camera after applying the preset. If membrane calculation fails (e.g., for very small structures), it logs an error and falls back to the 'auto' representation.
+
+There is no additional option for this kind beyond the general ones.
+
+#### motif
+This preset is designed to highlight structural motifs. It attempts to determine the correct assembly ID if not provided.
+It uses RcsbSuperpositionRepresentationPreset with selection expressions to highlight the motif, potentially with a specific color and transparency for the rest of the structure.
+- `label` (str): Optional. The prefix for component names.
+- `targets` (List[Target]): A list of targets that define the motif.
+- `color` (number): Optional. A hex value of color to apply to the motif.
+
+#### nakb
+This preset applies an 'auto' representation but specifically uses a 'nakb' (Nucleic Acid Knowledge Base) coloring theme.
+
+There is no additional option for this kind beyond the general ones. 
+
+#### glygen
+This preset is for visualizing glycosylation features.
+- `label` (str): Optional. A label for the GlyGen visualization.
+- `focus` (Target): The chain to highlight. The target will only be processed at the chain level. **Note**: this `focus` key is not used to focus the camera on the target, but to focus your attention on a chain.
+- `glycosylation` (List[Target]): Glycosylations to be highlighted. The targets will only be processed at the chain level.
 
 ## Loading trajectories
 
@@ -145,12 +232,12 @@ A MD trajectory normally has two parts -- the topology and the coordinates. The 
                       ``parse_coordinate()`` or ``parse_url()``.
    :type coordinate: dict
 
-   :returns: The value for the ``data`` parameter.
+   :returns: The value for the ``data`` property.
    :rtype: dict
 
 ```
 
-To load a trajectory, use the function `get_trajectory()` and supply the return value to `data` parameter.
+To load a trajectory, use the function `get_trajectory()` and supply the return value to `data` property.
 
 ```python
 import dash_molstar
@@ -172,7 +259,7 @@ app.layout = html.Div(
 ```{eval-rst}
 .. function:: parse_coordinate(inp, fmt=None)
 
-   Parse the coordinate file for loading a structure. This method encodes the binary coordinate file into a string with base64, so it is not recommended for loading trajectories larger than 10 MB. For larger trajectories, consider passing a URL to molstar.
+   Parse the coordinate file for loading a structure. This method encodes the binary coordinate file into a string with base64, so it is not recommended to load trajectories larger than 10 MB. For larger trajectories, consider passing a URL to molstar.
 
    :param inp: The file path to the molecule or the file content of the molecule.
                It can be either a string (file path) or a file-like object.
@@ -181,10 +268,10 @@ app.layout = html.Div(
    :type inp: str | file-like object
 
    :param fmt: The format of the input molecule. Supported formats include 
-               `dcd`, `xtc`, `trr`, `nctraj`. (default: ``None``)
+               `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj`. (default: ``None``)
    :type fmt: str, optional
 
-   :returns: The value for the ``coordinate`` parameter of the helper function ``get_trajectory()``.
+   :returns: The value for the ``coordinate`` argument of the helper function ``get_trajectory()``.
    :rtype: dict
 
    :raises RuntimeError: If the input format is not supported by molstar viewer.
@@ -194,7 +281,7 @@ app.layout = html.Div(
 ## Targets
 
 ```{eval-rst}
-.. function:: get_targets(chain, residue=None, auth=False)
+.. function:: get_targets(chain, residue=None, atom=None, auth=False)
 
    Select residues from a given chain. If no residue is specified, the entire chain will be selected.
 
@@ -205,14 +292,25 @@ app.layout = html.Div(
                    (default: ``None``)
    :type residue: int | List[int], optional
 
+   :param atom: Index of the target atom(s), corresponding to the structure file but started from 0. (default: `None`)
+   :type atom: int | List[int] optional
+
    :param auth: If a CIF file is loaded, set this to ``True`` to select the authentic chain names and residue numbers. 
                 (default: ``False``)
    :type auth: bool, optional
 
    :returns: A dictionary representing the selected residues.
-   :rtype: dict
+   :rtype: Target
 
-``` 
+```
+
+To specify a molecular target that you want to interact with, you should always use the `get_targets()` helper function.
+
+This function returns a **Target** instance containing information about the residues to be selected from the specified chain in molstar. If no residue is specified, the entire chain will be selected. Similarly, if no atom is specified, the entire residue will be selected.
+
+:::{seealso}
+For a detailed introduction of the **Target** class, see the [](targets.md) section.
+:::
 
 ```py
 from dash_molstar.utils import molstar_helper
@@ -225,9 +323,11 @@ segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
 
 # select residues 1-25 on chain L
 segment2 = molstar_helper.get_targets(chain="L", residue=list(range(1, 26)))
-```
 
-This function returns a dictionary containing information about the residues to be selected from the specified chain in molstar. If no residue is specified, the entire chain will be selected.
+# select atom index 192
+# you have to figure out which residue and chain it belongs to
+atom = molstar_helper.get_targets(chain="A", residue=25, atom=192)
+```
 
 When working with PDBx/mmCIF file formats, there will be two sets of naming and numbering system. One is a human-readable label or identifier for a chain names for residue numbers. The other is an authentic identifier that aligns with the experimental data and reflects the true identity of the chains and residues as determined through rigorous scientific procedures. Switching between the two systems by specifing `auth=True`.
 
@@ -243,7 +343,7 @@ When working with PDBx/mmCIF file formats, there will be two sets of naming and 
 
    :param targets: A dictionary or list of dictionaries representing the targets. The values should be generated 
                    by the helper function ``get_targets()``.
-   :type targets: dict | List[dict]
+   :type targets: Target | List[Target]
 
    :param representation: The representation(s) for this component. 
                           The default representation is cartoon.
@@ -293,11 +393,9 @@ See how to control the representation of components, in the [](representations.m
 
    :param targets: A dictionary or list of dictionaries representing the targets. The values should be generated 
                    by the helper function `get_targets`.
-   :type targets: dict | List[dict]
+   :type targets: Target | List[Target]
 
-   :param select: If ``True``, the targets will be selected in the viewer. If ``False``, the targets will be 
-                  highlighted but not selected, acting as if they are being hovered over. (default: ``True``)
-   :type select: bool, optional
+   :param select: **DEPRECATED**
 
    :param add: If ``False``, the viewer will clear existing selections before adding the new ones. 
                If ``True``, the new selections will be added to the existing ones. (default: ``False``)
@@ -308,7 +406,7 @@ See how to control the representation of components, in the [](representations.m
 
 ``` 
 
-This function selects the specified targets in molstar. The function takes in a dictionary or list of dictionaries containing the targets (whose value should be generated using the `get_targets()` function), and two optional boolean arguments (`select` and `add`) which specify whether the selection should replace the current selection or be added to it (defaulting to True and False, respectively).
+This function selects the specified targets in molstar. The function takes in a dictionary or list of dictionaries containing the targets (whose value should be generated using the `get_targets()` function), and an optional boolean arguments `add`, which specify whether the selection should replace the current selection or be added to the canvas (defaulting to `False`).
 
 ```py
 import dash_molstar
@@ -318,16 +416,14 @@ from dash_molstar.utils import molstar_helper
 segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
 
 # select the target
-select = molstar_helper.get_selection(segment, select=True)
-# hover on the target
-hover = molstar_helper.get_selection(segment, select=False)
+select = molstar_helper.get_selection(segment)
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
       data=molstar_helper.parse_molecule('3u7y.pdb'),
-      select=hover
+      select=select
    )
 )
 ```
@@ -339,7 +435,7 @@ app.layout = html.Div(
 
    :param targets: A dictionary or list of dictionaries representing the targets. The values should be generated 
                    by the helper function ``get_targets()``.
-   :type targets: dict | List[dict]
+   :type targets: Target | List[Target]
 
    :param analyse: If ``True``, non-covalent interactions within 5 angstroms of the targets will be analyzed. 
                    (default: ``False``)
@@ -403,7 +499,7 @@ app.layout = html.Div(
    :param opacity: Transparency of the box, ranging from 0 to 1.0. (default: ``1.0``)
    :type opacity: float, optional
 
-   :returns: A dictionary for the ``data`` parameter of MolstarViewer.
+   :returns: A dictionary for the ``data`` property of MolstarViewer.
    :rtype: dict
 
    :raises ValueError: If the input coordinates are not 3-dimensional.
@@ -440,7 +536,7 @@ Each box is identified by a label, allowing you to manage and update existing bo
                   The recommended value is ``6``.
    :type detail: int, optional
 
-   :returns: A dictionary for the ``data`` parameter of MolstarViewer.
+   :returns: A dictionary for the ``data`` property of MolstarViewer.
    :rtype: dict
 
    :raises ValueError: If the input coordinates are not 3-dimensional.
@@ -469,3 +565,69 @@ app.layout = html.Div(
    )
 )
 ```
+
+## Adding Measurements
+
+```{eval-rst}
+.. function:: get_measurement(targets, type='label', options=None, add=False)
+
+   Create a measurement for the specified targets in the viewer.
+
+   :param targets: The targets to be measured. The number of targets must meet the requirements of the specified measurement type. The targets should be generated by the helper function ``get_targets()``.
+   :type targets: Target | List[Target]
+
+   :param type: The type of measurement to create. Supported types are ``label``, ``orientation``, ``plane``, ``distance``, ``angle``, and ``dihedral``. For ``label``, ``orientation``, and ``plane``, at least one target should be provided. For ``distance``, ``angle``, and ``dihedral``, 2, 3, and 4 targets are required respectively. (default: ``'label'``)
+   :type type: str, optional
+
+   :param options: Additional options for the measurement. (default: ``None``)
+   :type options: dict, optional
+
+   :param add: If ``False``, existing measurements will be cleared before adding new ones. If ``True``, the new measurements will be added to the molecule. (default: ``False``)
+   :type add: bool, optional
+
+   :returns: The measurement data for callbacks.
+   :rtype: dict
+
+   :raises ValueError: If the specified measurement type is not supported or the number of targets does not meet the requirements.
+   :raises TypeError: If the targets are not valid ``Target`` objects.
+```
+
+The `get_measurement` function allows you to create and display various types of measurements (such as distances, angles) for selected targets in the molstar viewer. This is useful for analyzing spatial relationships and geometric properties within molecular structures.
+
+Parameters for the argument `targets` should be generated by the helper function `get_targets()`. For example, the following code snippet shows how to create measurements of distance, label and dihedral angle.
+
+```py
+from dash_molstar.utils import molstar_helper
+
+# Select two residues for distance measurement
+residue1 = molstar_helper.get_targets(chain="A", residue=10)
+residue2 = molstar_helper.get_targets(chain="A", residue=20)
+
+# Create a distance measurement
+distance = molstar_helper.get_measurement([residue1, residue2], type='distance')
+
+# Add a label to residues
+label1 = molstar_helper.get_measurement(residue1, type='label')
+label2 = molstar_helper.get_measurement(residue2, type='label')
+
+# Add phi and psi angles (both require 4 targets)
+dihedral_atoms = [
+   molstar_helper.get_targets(chain="A", residue=24, atom=186),
+   molstar_helper.get_targets(chain="A", residue=25, atom=192),
+   molstar_helper.get_targets(chain="A", residue=25, atom=193),
+   molstar_helper.get_targets(chain="A", residue=25, atom=194),
+   molstar_helper.get_targets(chain="A", residue=26, atom=202),
+]
+phi = molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral'),
+psi = molstar_helper.get_measurement(dihedral_atoms[1:], 'dihedral')
+```
+
+The measurement instances can be served to the `measurement` property of dash-molstar. If you want to create more than one measurements at a time, return them as a list. 
+
+By default, the existing measurements in the molstar viewer will be cleared before adding new ones. If you wish to keep them, you can specify `add=True`.
+
+```py
+phi = molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral', add=True)
+```
+
+If you have provided multiple measurements as a list, the plugin will only check the `add` parameter of the first element in the list.

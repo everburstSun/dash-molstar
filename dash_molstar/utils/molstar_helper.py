@@ -3,12 +3,13 @@ import os
 from urllib.parse import urlparse
 import base64
 from .representations import Representation
+from .target import Target
 
 
 supported_formats = {
-    'mol': ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2"],
+    'mol': ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2", "lammps_data", "lammps_traj_data"],
     'snapshot': ["json", "molj", "molx", "zip"],
-    'coords': ["dcd", "xtc", "trr", "nctraj"]
+    'coords': ["dcd", "xtc", "trr", "nctraj", "lammpstrj"],
 }
 
 def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
@@ -24,7 +25,7 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         Otherwise the format has to be specified manually.
     `fmt` — str (optional)
         Format of the input molecule. 
-        Supported formats include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` (default: `None`)
+        Supported formats include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data` (default: `None`)
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -64,6 +65,24 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         raise RuntimeError(f"The input molecule file format \"{fmt}\" is not supported by molstar.")
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
+    # processing preset
+    if 'target' in preset.keys():
+        if not isinstance(preset['target'], list): preset['target'] = [preset['target']]
+        preset['target'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['target']]
+    if 'focus' in preset.keys():
+        if not isinstance(preset['focus'], list): preset['focus'] = [preset['focus']]
+        preset['focus'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['focus']]
+    if 'targets' in preset.keys():
+        if not isinstance(preset['targets'], list): preset['targets'] = [preset['targets']]
+        preset['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['targets']]
+    if 'glycosylation' in preset.keys():
+        if not isinstance(preset['glycosylation'], list): preset['glycosylation'] = [preset['glycosylation']]
+        preset['glycosylation'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['glycosylation']]
+    if 'colors' in preset.keys():
+        if not isinstance(preset['colors'], list): preset['colors'] = [preset['colors']]
+        for color in preset['colors']:
+            if not isinstance(color['targets'], list): color['targets'] = [color['targets']]
+            color['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in color['targets']]
     d = {
         "type": 'mol',
         "data": data,
@@ -86,11 +105,11 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
     `fmt` — str (optional)
         Format of the input content. (default: `None`)
 
-        Supported formats for structures include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2` 
+        Supported formats for structures include `cif`, `cifcore`, `pdb`, `pdbqt`, `gro`, `xyz`, `mol`, `sdf`, `mol2`, `lammps_data`, `lammps_traj_data`
 
         Supported formats for states and sessions include `json`, `molj`, `molx`, `zip`
 
-        Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`
+        Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj`
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -121,6 +140,24 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
         raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
+    # processing preset
+    if 'target' in preset.keys():
+        if not isinstance(preset['target'], list): preset['target'] = [preset['target']]
+        preset['target'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['target']]
+    if 'focus' in preset.keys():
+        if not isinstance(preset['focus'], list): preset['focus'] = [preset['focus']]
+        preset['focus'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['focus']]
+    if 'targets' in preset.keys():
+        if not isinstance(preset['targets'], list): preset['targets'] = [preset['targets']]
+        preset['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['targets']]
+    if 'glycosylation' in preset.keys():
+        if not isinstance(preset['glycosylation'], list): preset['glycosylation'] = [preset['glycosylation']]
+        preset['glycosylation'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['glycosylation']]
+    if 'colors' in preset.keys():
+        if not isinstance(preset['colors'], list): preset['colors'] = [preset['colors']]
+        for color in preset['colors']:
+            if not isinstance(color['targets'], list): color['targets'] = [color['targets']]
+            color['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in color['targets']]
     d = {
         "type": 'url',
         "urlfor": urlfor,
@@ -146,7 +183,7 @@ def parse_coordinate(inp, fmt=None):
         Otherwise the format has to be specified manually.
     `fmt` — str (optional)
         Format of the input molecule. 
-        Supported formats include `dcd`, `xtc`, `trr`, `nctraj` (default: `None`)
+        Supported formats include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj` (default: `None`)
 
     Returns
     -------
@@ -292,7 +329,7 @@ def get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity
         'detail': detail
     }
 
-def get_targets(chain, residue=None, auth=False):
+def get_targets(chain, residue=None, atom=None, auth=False):
     """
     Select residues from a given chain. If no residue was specified, the entire chain will be selected.
 
@@ -302,27 +339,35 @@ def get_targets(chain, residue=None, auth=False):
         Name of the target chain
     `residue` — int | List[int] (optional)
         Residue index of the target residues, corresponding to the structure file. (default: `None`)
+    `atom` — int | List[int] (optional)
+        Index of the target atom(s), corresponding to the structure file but started from 0. (default: `None`)
     `auth` — bool (optional)
         If a cif file was loaded, set `auth` to `True` to select the authentic chain names and residue numbers (default: `False`)
 
     Returns
     -------
-    `dict`
-        Selected residues
+    `Target`
+        Selected chains, residues or atoms.
     """
-    target = {'chain_name': chain, 'auth': auth}
+    target = Target()
+    target.auth = auth
+    target.add_chain(chain)
     if residue is not None:
         if type(residue) != list: residue = [residue]
-        residues = []
         for res in residue:
-            if type(res) == int: residues.append(res)
+            if type(res) == int: target.chains[-1].add_residue(res)
             elif type(res) == str:
                 try:
                     num = eval(res)
-                    residues.append(num)
+                    target.chains[-1].add_residue(num)
                 except:
-                    pass
-        target['residue_numbers'] = residues
+                    num = eval(res[:-1])
+                    ins = res[-1]
+                    target.chains[-1].add_residue(num, ins_code=ins)
+            if atom is not None:
+                if type(atom) != list: atom = [atom]
+                for a in atom:
+                    target.chains[-1].residues[-1].add_atom(a)
     return target
 
 def create_component(label, targets, representation=Representation()):
@@ -333,7 +378,7 @@ def create_component(label, targets, representation=Representation()):
     ----------
     `label` — str
         Name of the component
-    `targets` — dict | List[dict]
+    `targets` — Target | List[Target]
         List of targets, whose value should be generated by helper function `get_targets`
     `representation` — Representation | List[Representation] (optional)
         The representation(s) for this component (default: cartoon)
@@ -352,23 +397,23 @@ def create_component(label, targets, representation=Representation()):
     if type(representation) != list: representation = [representation]
     return {
         'label': label,
-        'targets': targets,
-        'representation': [r.to_dict() if type(r)!=dict else r for r in representation]
+        'targets': [t.to_dict() if isinstance(t, Target) else t for t in targets],
+        'representation': [r.to_dict() if isinstance(r, Representation) else r for r in representation]
     }
 
 def get_selection(targets, select=True, add=False):
     """
-    Select specific targets in the molstar viewer.
+    Select specific targets in the molstar viewer. The returned value can be passed to either `selection` or 
+    `hover` parameters.
 
     Parameters
     ----------
-    `targets` — dict | List[dict]
+    `targets` — Target | List[Target]
         List of targets, whose value should be generated by helper function `get_targets`
-    `select` — bool (optional)
-        True for 'select' mode and False for 'hover' mode. (default: `True`)
 
-        If set to True, the targets will be "selected" in the viewer.
-        Otherwise they will be highlighted but not selected, as you hover on the structure.
+    `select`
+        DEPRECATED
+
     `add` — bool (optional)
         If set to False, the viewer will clear the selections in corresponding mode before adding new selections.
         Otherwise the new selections will be added to existed ones. (default: `False`)
@@ -378,25 +423,22 @@ def get_selection(targets, select=True, add=False):
     `dict`
         Selection data for callbacks.
     """
-    if select: mode = 'select'
-    else: mode = 'hover'
-
     if add: modifier = 'add'
     else: modifier = 'set'
     if type(targets) != list: targets = [targets]
     return {
-        'targets': targets,
-        'mode': mode,
+        'targets': [t.to_dict() if isinstance(t, Target) else t for t in targets],
         'modifier': modifier
     }
 
 def get_focus(targets, analyse=False):
     """
-    Let the camera focus on the specified targets. If `analyse` were set to true, non-covalent interactions within 5 angstroms will be analyzed.
+    Let the camera focus on the specified targets. 
+    If `analyse` were set to true, non-covalent interactions within 5 angstroms will be analyzed.
 
     Parameters
     ----------
-    `targets` — dict | List[dict]
+    `targets` — Target | List[Target]
         List of targets, whose value should be generated by helper function `get_targets`
     `analyse` — bool (optional)
         Whether to analyse the non-covalent interactions of targets to its surroundings within 5 angstroms  (default: `False`)
@@ -408,6 +450,59 @@ def get_focus(targets, analyse=False):
     """
     if type(targets) != list: targets = [targets]
     return {
-        'targets': targets,
+        'targets': [t.to_dict() if isinstance(t, Target) else t for t in targets],
         'analyse': analyse
+    }
+
+def get_measurement(targets, type='label', options=None, add=False):
+    """
+    Create a measurement for the specified targets. There are 6 types of measurements supported by molstar, 
+    specify them in the `type` parameter.
+
+    Parameters
+    ----------
+    `targets` — Target | List[Target]
+        The targets to be measured. The number of targets must meet the requirements of the specified measurement type. 
+        The targets should be generated by helper function `get_targets`.
+    `type` — str (optional)
+        The 6 supported measurements are: label, orientation, plane, distance, angle, and dihedral. 
+        For label, orientation, and plane, at least one target should be provided. For distances, angles, and dihedrals,
+         2, 3, and 4 targets are needed respectively. (default: `'label'`)
+    `add` — bool (optional)
+        If set to False, existing measurements will be cleared before adding new ones.
+        Otherwise the new measurements will be added to molecule. (default: `False`)
+
+    Returns
+    -------
+    `dict`
+        The measurement data for callbacks.
+
+    Raises
+    ------
+    `ValueError`
+        If the specified measurement type is not supported or the number of targets does not meet the requirements.
+    `TypeError`
+        If the targets are not valid `Target` objects, raises `TypeError`.
+    """
+    if not isinstance(targets, list): targets = [targets]
+    minimum_required = {
+        'label': 1,
+        'orientation': 1,
+        'plane': 1,
+        'distance': 2,
+        'angle': 3,
+        'dihedral': 4
+    }
+    if type not in minimum_required.keys():
+        raise ValueError(f"Invalid measurement type \"{type}\". Supported types are {minimum_required.keys()}.")
+    if len(targets) < minimum_required[type]:
+        raise ValueError(f"At least {minimum_required[type]} required by the measurement \"{type}\", only {len(targets)} provided.")
+
+    for t in range(minimum_required[type]):
+        if not isinstance(targets[t], Target) or not targets[t].valid:
+            raise TypeError(f"Target {t} is not a valid Target object. Use helper function `get_targets` to generate targets.")
+    return {
+        'targets': [t.to_dict() if isinstance(t, Target) else t for t in targets],
+        'type': type,
+        'mode': 'add' if add else 'set',
     }

@@ -1,6 +1,6 @@
 {
   "name": "dash_molstar",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "The molstar plugin for plotly dash framework",
   "repository": {
     "type": "git",
@@ -43,9 +43,9 @@
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-react": "^7.14.2",
     "prop-types": "^15.7.2",
-    "react": "^16.8.6",
+    "react": "^18.3.1",
     "react-docgen": "^4.1.1",
-    "react-dom": "^16.8.6",
+    "react-dom": "^18.3.1",
     "style-loader": "^0.23.1",
     "styled-jsx": "^5.1.2",
     "terser-webpack-plugin": "^2.3.0",
