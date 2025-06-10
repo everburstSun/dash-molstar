@@ -65,6 +65,24 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         raise RuntimeError(f"The input molecule file format \"{fmt}\" is not supported by molstar.")
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
+    # processing preset
+    if 'target' in preset.keys():
+        if not isinstance(preset['target'], list): preset['target'] = [preset['target']]
+        preset['target'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['target']]
+    if 'focus' in preset.keys():
+        if not isinstance(preset['focus'], list): preset['focus'] = [preset['focus']]
+        preset['focus'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['focus']]
+    if 'targets' in preset.keys():
+        if not isinstance(preset['targets'], list): preset['targets'] = [preset['targets']]
+        preset['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['targets']]
+    if 'glycosylation' in preset.keys():
+        if not isinstance(preset['glycosylation'], list): preset['glycosylation'] = [preset['glycosylation']]
+        preset['glycosylation'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['glycosylation']]
+    if 'colors' in preset.keys():
+        if not isinstance(preset['colors'], list): preset['colors'] = [preset['colors']]
+        for color in preset['colors']:
+            if not isinstance(color['targets'], list): color['targets'] = [color['targets']]
+            color['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in color['targets']]
     d = {
         "type": 'mol',
         "data": data,
@@ -122,6 +140,24 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
         raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
+    # processing preset
+    if 'target' in preset.keys():
+        if not isinstance(preset['target'], list): preset['target'] = [preset['target']]
+        preset['target'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['target']]
+    if 'focus' in preset.keys():
+        if not isinstance(preset['focus'], list): preset['focus'] = [preset['focus']]
+        preset['focus'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['focus']]
+    if 'targets' in preset.keys():
+        if not isinstance(preset['targets'], list): preset['targets'] = [preset['targets']]
+        preset['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['targets']]
+    if 'glycosylation' in preset.keys():
+        if not isinstance(preset['glycosylation'], list): preset['glycosylation'] = [preset['glycosylation']]
+        preset['glycosylation'] = [t.to_dict() if isinstance(t, Target) else t for t in preset['glycosylation']]
+    if 'colors' in preset.keys():
+        if not isinstance(preset['colors'], list): preset['colors'] = [preset['colors']]
+        for color in preset['colors']:
+            if not isinstance(color['targets'], list): color['targets'] = [color['targets']]
+            color['targets'] = [t.to_dict() if isinstance(t, Target) else t for t in color['targets']]
     d = {
         "type": 'url',
         "urlfor": urlfor,

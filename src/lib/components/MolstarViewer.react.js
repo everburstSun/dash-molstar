@@ -263,10 +263,25 @@ export default class MolstarViewer extends Component {
         }
         return parsedTargets;
     }
+    parseTargetsForMoleculePresets(preset) {
+        if (preset && preset.hasOwnProperty('target'))
+            preset.target = this.parseTargetsFromPython(preset.target, null)[0];
+        if (preset && preset.hasOwnProperty('focus'))
+            preset.focus = this.parseTargetsFromPython(preset.focus, null)[0];
+        if (preset && preset.hasOwnProperty('targets'))
+            preset.targets = this.parseTargetsFromPython(preset.targets, null);
+        if (preset && preset.hasOwnProperty('glycosylation'))
+            preset.glycosylation = this.parseTargetsFromPython(preset.glycosylation, null);
+        if (preset && preset.hasOwnProperty('colors'))
+            for (let color of preset.colors)
+                color.targets = this.parseTargetsFromPython(color.targets, null);
+    }
     loadData(data) {
         if (typeof data === "object") {
             const model_index = Object.keys(this.loadedStructures).length + 1;
             if (data.type === "mol") { // loading a structure
+                // handle the target key in preset
+                this.parseTargetsForMoleculePresets(data.preset);
                 this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset})
                 .then((result) => {
                     // add the structure ID to this.loadedStructures
@@ -280,6 +295,8 @@ export default class MolstarViewer extends Component {
             } else if (data.type === 'url') { // loading a URL
                 // load url for molecules
                 if (data.urlfor === 'mol') { // loading a structure from URL
+                    // handle the target key in preset
+                    this.parseTargetsForMoleculePresets(data.preset);
                     this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset})
                     .then((result) => {
                         // add the structure ID to this.loadedStructures
@@ -295,6 +312,8 @@ export default class MolstarViewer extends Component {
                 }
             } else if (data.type === 'traj') {
                 const { topo, coords } = data;
+                // handle the target key in preset
+                this.parseTargetsForMoleculePresets(topo.preset);
                 this.viewer.loadTrajectory(topo, coords, {props: topo.preset})
                 .then((result) => {
                     // add the structure ID to this.loadedStructures
