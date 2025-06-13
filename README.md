@@ -1,4 +1,5 @@
-# dash-molstar
+![Downloads](https://static.pepy.tech/badge/dash-molstar)
+[![License](https://img.shields.io/badge/license-LGPL-blue.svg?style=flat)](./LICENSE)
 
 ## Introduction
 `dash-molstar` is a Dash component library that integrate [Molstar Viewer](https://github.com/molstar/rcsb-molstar) into Dash framework. Molstar is a modern, web-based software framework for molecular visualization and analysis. With Dash, one can use pure python code to control some basic operations of molstar and easily embed this plugin into their web page.
