@@ -1,5 +1,9 @@
 # dash-molstar Changelog
 
+## [1.3.1] - 2025-07-01
+### Bug fixes
+- Fixed behaviour when component is removed from the web page
+
 ## [1.3.0] - 2025-06-10
 ### Changed
 - Synced molstar fork with rcsb-molstar to 2.11.4

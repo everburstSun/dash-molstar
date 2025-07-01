@@ -101,43 +101,49 @@ export default class MolstarViewer extends Component {
         }
     }
     handleSelectionChange(selection) {
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            let targets = [];
-            if (selection.targets && selection.targets[0] !== null) {
-                // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(selection.targets, id);
+        if (selection) {
+            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+            if (model_index >= 0) {
+                const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+                let targets = [];
+                if (selection.targets && selection.targets[0] !== null) {
+                    // convert data from python to molstar data structure
+                    targets = this.parseTargetsFromPython(selection.targets, id);
+                }
+                this.viewer.select(targets, 'select', selection.modifier);
             }
-            this.viewer.select(targets, 'select', selection.modifier);
+            this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
         }
-        this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
     }
     handleHoverChange(hover) {
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            let targets = [];
-            if (hover.targets && hover.targets[0] !== null) {
-                // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(hover.targets, id);
+        if (hover) {
+            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+            if (model_index >= 0) {
+                const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+                let targets = [];
+                if (hover.targets && hover.targets[0] !== null) {
+                    // convert data from python to molstar data structure
+                    targets = this.parseTargetsFromPython(hover.targets, id);
+                }
+                this.viewer.select(targets, 'hover', hover.modifier);
             }
-            this.viewer.select(targets, 'hover', hover.modifier);
+            this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
         }
-        this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
     }
     handleFocusChange(focus) {
-        const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
-        if (model_index >= 0) {
-            const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
-            let targets = [];
-            if (focus.targets && focus.targets[0] !== null) {
-                // convert data from python to molstar data structure
-                targets = this.parseTargetsFromPython(focus.targets, id);
+        if (focus) {
+            const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
+            if (model_index >= 0) {
+                const id = this.viewer._plugin.managers.structure.hierarchy.current.structures[model_index].cell.obj.data.units[0].model.id;
+                let targets = [];
+                if (focus.targets && focus.targets[0] !== null) {
+                    // convert data from python to molstar data structure
+                    targets = this.parseTargetsFromPython(focus.targets, id);
+                }
+                this.viewer.setFocus(targets, focus.analyse);
             }
-            this.viewer.setFocus(targets, focus.analyse);
+            this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
         }
-        this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
     }
     handleFrameChange(frame_index) {
         if (Object.keys(this.loadedStructures).length != 0) {
@@ -373,28 +379,48 @@ export default class MolstarViewer extends Component {
             this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
 
             // subscribe to focus change
-            this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
+            this.focusSubscription = this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
+                if (this.viewer._plugin.disposed) {
+                    return;
+                }
                 if (this.viewer._plugin.managers.structure.focus.history.length > 0) {
-                    this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
-                    this.props.setProps({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                    const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
+                    this.setState({focus: focusData});
+                    if (this.props.setProps) {
+                        this.props.setProps({focus: focusData});
+                    }
                 }
             });
 
             // subscribe to selection change
-            this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
-                this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
-                this.props.setProps({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
+            this.selectionSubscription = this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
+                if (this.viewer._plugin.disposed) {
+                    return;
+                }
+                const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
+                this.setState({selection: selectionData});
+                if (this.props.setProps) {
+                    this.props.setProps({selection: selectionData});
+                }
             });
 
             // subscribe to frame change
-            this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
-                this.setState({frame: this.viewer.getCurrentFrame(state)});
-                this.props.setProps({frame: this.viewer.getCurrentFrame(state)});
+            this.frameSubscription = this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
+                if (this.viewer._plugin.disposed) {
+                    return;
+                }
+                const frameData = this.viewer.getCurrentFrame(state);
+                this.setState({frame: frameData});
+                if (this.props.setProps) {
+                    this.props.setProps({frame: frameData});
+                }
                 if (this.state.updatefocusonframechange) {
-                    this.setState({focus: this.parseTargetsForPython(this.viewer.getCurrentFocus())});
+                    const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
+                    this.setState({focus: focusData});
                 }
                 if (this.state.updateselectiononframechange) {
-                    this.setState({selection: this.parseTargetsForPython(this.viewer.getCurrentSelection())});
+                    const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
+                    this.setState({selection: selectionData});
                 }
             });
 
@@ -449,6 +475,25 @@ export default class MolstarViewer extends Component {
         if (this.props.updateselectiononframechange !== prevProps.updateselectiononframechange) {
             this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
         }
+    }
+
+    componentWillUnmount() {
+        this.cleanupViewer();
+    }
+
+    cleanupViewer() {
+        // unsubscribe from all events
+        this.focusSubscription.unsubscribe();
+        this.focusSubscription = null;
+        this.selectionSubscription.unsubscribe();
+        this.selectionSubscription = null;
+        this.frameSubscription.unsubscribe();
+        this.frameSubscription = null;
+        this.viewer._plugin.dispose();
+        this.viewer = null;
+
+        this.loadedShapes = {};
+        this.loadedStructures = {};
     }
 
     render() {
