@@ -1,8 +1,10 @@
 # dash-molstar Changelog
 
-## [1.3.1] - 2025-07-01
+## [1.3.1] - 2025-09-15
 ### Bug fixes
-- Fixed behaviour when component is removed from the web page
+- Fixed abnormal behaviour when the molstar react component is removed from the web page
+- Fixed the problem that camera control options can't be applied
+- Fixed representation adding issues when creating multiple components 
 
 ## [1.3.0] - 2025-06-10
 ### Changed
