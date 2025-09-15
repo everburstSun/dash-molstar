@@ -28,7 +28,7 @@ app.layout = html.Div(
 )
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)
 ```
 
 Clone the repository to your local directory and run the following command to see the demo:
