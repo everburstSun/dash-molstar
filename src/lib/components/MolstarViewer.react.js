@@ -349,6 +349,10 @@ export default class MolstarViewer extends Component {
         } else if (data.shape === 'sphere') {
             this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail).then((ref) => {
             this.loadedShapes[data.label] = ref;
+        });
+        } else if (data.shape === 'cylinder') {
+            this.viewer.createCylinder(data.label, data.start, data.end, data.color, data.alpha, data.props, data.dashed, data.dash_segments).then((ref) => {
+            this.loadedShapes[data.label] = ref;
         })};
     }
     addComponent(component) {

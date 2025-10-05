@@ -326,7 +326,8 @@ def load_protein_with_shapes(yes):
                                          opacity=0.7) 
               for shape in shape_data ]
     box = molstar_helper.get_box(min_xyz=(-6.76, -7.916, 6.788), max_xyz=(3.559, 6.406, 20.594))
-    data = [mol, box]
+    dashedline = molstar_helper.get_cylinder(start=(-0.295, -4.113, 10.415), end=(1.559, -0.893, 17.501), radius=0.1, label="Sample dashed line", color='yellow', opacity=0.8, dashed=True)
+    data = [mol, box, dashedline]
     data.extend(shapes)
 
     return data

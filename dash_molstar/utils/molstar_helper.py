@@ -329,6 +329,58 @@ def get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity
         'detail': detail
     }
 
+def get_cylinder(start=(0,0,0), end=(1,1,1), radius=0.1, label="Cylinder", color='yellow', opacity=1.0, dashed=False, dash_segments='auto'):
+    """
+    Generate a cylinder in the viewer with given parameters.
+
+    Parameters
+    ----------
+    `start` — tuple (optional)
+        Start point of the cylinder (default: `(0,0,0)`)
+    `end` — tuple (optional)
+        End point of the cylinder (default: `(1,1,1)`)
+    `radius` — float (optional)
+        Cylinder radius in angstrom (default: `0.1`)
+    `label` — str (optional)
+        The cylinder label to be shown in the viewer (default: `"Cylinder"`)
+    `color` — str (optional)
+        X11 color names (default: `'yellow'`)
+        Avaliable options can be found at [here](https://www.w3.org/TR/css-color-3/#svg-color)
+    `opacity` — float (optional)
+        Transparency of the box. The value is ranging from 0 to 1.0. (default: `1.0`)
+    `dashed` — bool (optional)
+        Whether to create a dashed cylinder (default: `False`)
+    `dash_segments` — str (optional)
+        Number of segments for the dashed cylinder, including gaps (default: `'auto'`)
+    """
+    if len(start) != 3: raise ValueError("Coordinates must be 3-dimensional!")
+    if len(end) != 3: raise ValueError("Coordinates must be 3-dimensional!")
+    
+    if dashed:
+        if dash_segments == 'auto':
+            length = ((start[0]-end[0])**2 + (start[1]-end[1])**2 + (start[2]-end[2])**2)**0.5
+            dash_segments = length * 3
+    
+    return {
+        'type': 'shape',
+        'shape': 'cylinder',
+        'start': start,
+        'end': end,
+        'props': {
+            'radiusTop': radius,
+            'radiusBottom': radius,
+            'radialSegments': 100,
+            'heightSegments': 100,
+            'topCap': True,
+            'bottomCap': True,
+        },
+        'label': label,
+        'color': color,
+        'alpha': opacity,
+        'dashed': dashed,
+        'dash_segments': dash_segments
+    }
+
 def get_targets(chain, residue=None, atom=None, auth=False):
     """
     Select residues from a given chain. If no residue was specified, the entire chain will be selected.
