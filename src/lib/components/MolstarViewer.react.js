@@ -344,16 +344,17 @@ export default class MolstarViewer extends Component {
         // creating new shapes
         if (data.shape === 'box') {
             this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color, data.alpha).then((ref) => {
-            this.loadedShapes[data.label] = ref;
-        });
+                this.loadedShapes[data.label] = ref;
+            });
         } else if (data.shape === 'sphere') {
             this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail).then((ref) => {
-            this.loadedShapes[data.label] = ref;
-        });
+                this.loadedShapes[data.label] = ref;
+            });
         } else if (data.shape === 'cylinder') {
             this.viewer.createCylinder(data.label, data.start, data.end, data.color, data.alpha, data.props, data.dashed, data.dash_segments).then((ref) => {
-            this.loadedShapes[data.label] = ref;
-        })};
+                this.loadedShapes[data.label] = ref;
+            });
+        }
     }
     addComponent(component) {
         // construct molstar target object from python helper data
@@ -428,30 +429,32 @@ export default class MolstarViewer extends Component {
                 }
             });
 
-            if (this.state.data) {
-                this.handleDataChange(this.state.data);
-            }
-            if (this.state.selection) {
-                this.handleSelectionChange(this.state.selection);
-            }
-            if (this.state.hover) {
-                this.handleHoverChange(this.state.hover);
-            }
-            if (this.state.focus) {
-                this.handleFocusChange(this.state.focus);
-            }
-            if (this.state.frame) {
-                this.handleFrameChange(this.state.frame);
-            }
-            if (this.state.measurement) {
-                this.handleMeasurementChange(this.state.measurement);
-            }
-            if (this.state.updatefocusonframechange) {
-                this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
-            }
-            if (this.state.updateselectiononframechange) {
-                this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
-            }
+            setTimeout(() => { // slight delay to ensure viewer is fully initialized
+                if (this.state.data) {
+                    this.handleDataChange(this.state.data);
+                }
+                if (this.state.selection) {
+                    this.handleSelectionChange(this.state.selection);
+                }
+                if (this.state.hover) {
+                    this.handleHoverChange(this.state.hover);
+                }
+                if (this.state.focus) {
+                    this.handleFocusChange(this.state.focus);
+                }
+                if (this.state.frame) {
+                    this.handleFrameChange(this.state.frame);
+                }
+                if (this.state.measurement) {
+                    this.handleMeasurementChange(this.state.measurement);
+                }
+                if (this.state.updatefocusonframechange) {
+                    this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
+                }
+                if (this.state.updateselectiononframechange) {
+                    this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
+                }
+            }, 10);
         }
     }
     componentDidUpdate(prevProps) {
