@@ -89,14 +89,14 @@ export default class MolstarViewer extends Component {
         }
         this.setState({data: data});
     }
-    handleComponentChange(component) {
+    async handleComponentChange(component) {
         if (component) {
             if (Array.isArray(component)) {
-                component.forEach((obj) => {
-                    this.addComponent(obj);
-                });
+                for (const obj of component) {
+                    await this.addComponent(obj);
+                }
             } else if (typeof component === "object") {
-                this.addComponent(component);
+                await this.addComponent(component);
             }
         }
     }
@@ -289,13 +289,13 @@ export default class MolstarViewer extends Component {
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(data.preset);
                 this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset})
-                .then((result) => {
+                .then(async (result) => {
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
                     if (data.hasOwnProperty('component')) {
                         this.bindingComponentToMolecule(data, model_index);
-                        this.handleComponentChange(data.component);
+                        await this.handleComponentChange(data.component);
                     }
                 });
             } else if (data.type === 'url') { // loading a URL
@@ -304,13 +304,13 @@ export default class MolstarViewer extends Component {
                     // handle the target key in preset
                     this.parseTargetsForMoleculePresets(data.preset);
                     this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset})
-                    .then((result) => {
+                    .then(async (result) => {
                         // add the structure ID to this.loadedStructures
                         this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                         // if user specified component(s), add them to the structure
                         if (data.hasOwnProperty('component')) {
                             this.bindingComponentToMolecule(data, model_index);
-                            this.handleComponentChange(data.component);
+                            await this.handleComponentChange(data.component);
                         }
                     });
                 } else if (data.urlfor === 'snapshot') { // load url for molstar snapshot file
@@ -321,13 +321,13 @@ export default class MolstarViewer extends Component {
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(topo.preset);
                 this.viewer.loadTrajectory(topo, coords, {props: topo.preset})
-                .then((result) => {
+                .then(async (result) => {
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
                     if (topo.hasOwnProperty('component')) {
                         this.bindingComponentToMolecule(topo, model_index);
-                        this.handleComponentChange(topo.component);
+                        await this.handleComponentChange(topo.component);
                     }
                 });
             } else if (data.type === 'shape') {
@@ -356,14 +356,14 @@ export default class MolstarViewer extends Component {
             });
         }
     }
-    addComponent(component) {
+    async addComponent(component) {
         // construct molstar target object from python helper data
         let targets = [];
         if (component.targets && component.targets[0] !== null) {
             // convert data from python to molstar data structure
             targets = this.parseTargetsFromPython(component.targets, component.modelId)
         }
-        this.viewer.createComponent(component.label, targets, component.representation);
+        await this.viewer.createComponent(component.label, targets, component.representation);
     }
     async addMeasurement(measurement) {
         const model_index = this.viewer._plugin.managers.structure.hierarchy.current.structures.length - 1;
