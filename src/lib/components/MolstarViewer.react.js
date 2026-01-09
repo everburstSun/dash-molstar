@@ -61,7 +61,7 @@ export default class MolstarViewer extends Component {
         const updatedStyle = Object.assign({}, this.state.style, props.style);
         this.state.style = updatedStyle;
     }
-    handleDataChange(data) {
+    async handleDataChange(data) {
         // if new molecule was loaded into the viewer, clear the stage before loading
         if (Array.isArray(data)) {
             for (let d of data) {
@@ -77,14 +77,36 @@ export default class MolstarViewer extends Component {
             this.loadedShapes = {};
             this.loadedStructures = {};
         }
-        // loading data
+        // loading data - separate molecules/trajectories from shapes
+        // shapes depend on canvas3d being fully ready, so we load molecules first
         if (data) {
+            const molecules = [];
+            const shapes = [];
+            
             if (Array.isArray(data)) {
-                data.forEach((obj) => {
-                    this.loadData(obj);
-                });
+                for (const obj of data) {
+                    if (obj.type === 'shape') {
+                        shapes.push(obj);
+                    } else {
+                        molecules.push(obj);
+                    }
+                }
             } else if (typeof data === "object") {
-                this.loadData(data);
+                if (data.type === 'shape') {
+                    shapes.push(data);
+                } else {
+                    molecules.push(data);
+                }
+            }
+            
+            // Load molecules first (they may need time to initialize canvas3d properly)
+            for (const mol of molecules) {
+                await this.loadData(mol);
+            }
+            
+            // Then load shapes after molecules are loaded
+            for (const shape of shapes) {
+                await this.loadShape(shape);
             }
         }
         this.setState({data: data});
@@ -282,14 +304,26 @@ export default class MolstarViewer extends Component {
             for (let color of preset.colors)
                 color.targets = this.parseTargetsFromPython(color.targets, null);
     }
-    loadData(data) {
+    async loadData(data) {
         if (typeof data === "object") {
             const model_index = Object.keys(this.loadedStructures).length + 1;
             if (data.type === "mol") { // loading a structure
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(data.preset);
-                this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset})
-                .then(async (result) => {
+                const result = await this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset});
+                // add the structure ID to this.loadedStructures
+                this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
+                // if user specified component(s), add them to the structure
+                if (data.hasOwnProperty('component')) {
+                    this.bindingComponentToMolecule(data, model_index);
+                    await this.handleComponentChange(data.component);
+                }
+            } else if (data.type === 'url') { // loading a URL
+                // load url for molecules
+                if (data.urlfor === 'mol') { // loading a structure from URL
+                    // handle the target key in preset
+                    this.parseTargetsForMoleculePresets(data.preset);
+                    const result = await this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset});
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
@@ -297,63 +331,41 @@ export default class MolstarViewer extends Component {
                         this.bindingComponentToMolecule(data, model_index);
                         await this.handleComponentChange(data.component);
                     }
-                });
-            } else if (data.type === 'url') { // loading a URL
-                // load url for molecules
-                if (data.urlfor === 'mol') { // loading a structure from URL
-                    // handle the target key in preset
-                    this.parseTargetsForMoleculePresets(data.preset);
-                    this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset})
-                    .then(async (result) => {
-                        // add the structure ID to this.loadedStructures
-                        this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
-                        // if user specified component(s), add them to the structure
-                        if (data.hasOwnProperty('component')) {
-                            this.bindingComponentToMolecule(data, model_index);
-                            await this.handleComponentChange(data.component);
-                        }
-                    });
                 } else if (data.urlfor === 'snapshot') { // load url for molstar snapshot file
-                    this.viewer.loadSnapshotFromUrl(data.data, data.format);
+                    await this.viewer.loadSnapshotFromUrl(data.data, data.format);
                 }
             } else if (data.type === 'traj') {
                 const { topo, coords } = data;
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(topo.preset);
-                this.viewer.loadTrajectory(topo, coords, {props: topo.preset})
-                .then(async (result) => {
-                    // add the structure ID to this.loadedStructures
-                    this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
-                    // if user specified component(s), add them to the structure
-                    if (topo.hasOwnProperty('component')) {
-                        this.bindingComponentToMolecule(topo, model_index);
-                        await this.handleComponentChange(topo.component);
-                    }
-                });
-            } else if (data.type === 'shape') {
-                this.loadShape(data);
+                const result = await this.viewer.loadTrajectory(topo, coords, {props: topo.preset});
+                // add the structure ID to this.loadedStructures
+                this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
+                // if user specified component(s), add them to the structure
+                if (topo.hasOwnProperty('component')) {
+                    this.bindingComponentToMolecule(topo, model_index);
+                    await this.handleComponentChange(topo.component);
+                }
             }
         }
     }
-    loadShape(data) {
+    async loadShape(data) {
         // if the provided data label existed, remove it first before creating a new one
         if (data.label && this.loadedShapes[data.label]) {
             this.viewer.removeRef(this.loadedShapes[data.label]);
             delete this.loadedShapes[data.label];
         }
         // creating new shapes
+        let ref;
         if (data.shape === 'box') {
-            this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color, data.alpha).then((ref) => {
-                this.loadedShapes[data.label] = ref;
-            });
+            ref = await this.viewer.createBoundingBox(data.label, data.min, data.max, data.radius, data.color, data.alpha);
         } else if (data.shape === 'sphere') {
-            this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail).then((ref) => {
-                this.loadedShapes[data.label] = ref;
-            });
+            ref = await this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail);
         } else if (data.shape === 'cylinder') {
-            this.viewer.createCylinder(data.label, data.start, data.end, data.color, data.alpha, data.props, data.dashed, data.dash_segments).then((ref) => {
-                this.loadedShapes[data.label] = ref;
-            });
+            ref = await this.viewer.createCylinder(data.label, data.start, data.end, data.color, data.alpha, data.props, data.dashed, data.dash_segments);
+        }
+        if (ref) {
+            this.loadedShapes[data.label] = ref;
         }
     }
     async addComponent(component) {
@@ -429,7 +441,8 @@ export default class MolstarViewer extends Component {
                 }
             });
 
-            setTimeout(() => { // slight delay to ensure viewer is fully initialized
+            // Wait for plugin to be fully initialized before loading data
+            this.viewer._plugin.initialized.then(() => {
                 if (this.state.data) {
                     this.handleDataChange(this.state.data);
                 }
@@ -454,7 +467,7 @@ export default class MolstarViewer extends Component {
                 if (this.state.updateselectiononframechange) {
                     this.setState({updateselectiononframechange: this.props.updateselectiononframechange});
                 }
-            }, 10);
+            });
         }
     }
     componentDidUpdate(prevProps) {
