@@ -12,7 +12,18 @@ from dash_molstar.utils import molstar_helper
 from dash_molstar.utils.representations import Representation
 from dash_molstar.utils.target import Target
 
-app = Dash(__name__, assets_folder='bootstrap')
+app = Dash(__name__, 
+        external_scripts=[{
+            'src': 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js',
+            'integrity': 'sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm',
+            'crossorigin': 'anonymous'
+        }],
+        external_stylesheets=[{
+            'href': 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css',
+            'integrity': 'sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9',
+            'crossorigin': 'anonymous',
+            'rel': 'stylesheet'
+        }])
 df = pd.read_json(os.path.join("tests", "H_G_interaction.json"))
 
 enable_outline = {
