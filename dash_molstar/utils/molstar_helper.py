@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import base64
 from .representations import Representation
 from .target import Target
+from .shapes import create_box, create_sphere, create_cylinder
 
 
 supported_formats = {
@@ -242,145 +243,6 @@ def get_trajectory(topology, coordinate):
         'coords': coordinate
     }
 
-def get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red', opacity=1.0):
-    """
-    Generate a bounding box in the viewer with given parameters.
-
-    Parameters
-    ----------
-    `min_xyz` — tuple (optional)
-        Minimum of x, y and z values (default: `(0,0,0)`)
-    `max_xyz` — tuple (optional)
-        Maximum of x, y and z values (default: `(1,1,1)`)
-    `radius` — float (optional)
-        Edge radius in angstrom (default: `0.1`)
-    `label` — str (optional)
-        The box label to be shown in the viewer (default: `"Bounding Box"`)
-    `color` — str (optional)
-        X11 color names (default: `'red'`)
-        Avaliable options can be found at [here](https://www.w3.org/TR/css-color-3/#svg-color)
-    `opacity` — float (optional)
-        Transparency of the box. The value is ranging from 0 to 1.0. (default: `1.0`)
-
-    Returns
-    -------
-    `dict`
-        Dict for the `data` parameter of MolstarViewer
-
-    Raises
-    ------
-    `ValueError`
-        Raised if input coordinates are not 3-dimensional
-    """
-    if len(min_xyz) != 3: raise ValueError("Coordinates must be 3-dimensional!")
-    if len(max_xyz) != 3: raise ValueError("Coordinates must be 3-dimensional!")
-    return {
-        'type': 'shape',
-        'shape': 'box',
-        'min': min_xyz,
-        'max': max_xyz,
-        'radius': radius,
-        'label': label,
-        'color': color,
-        'alpha': opacity
-    }
-
-def get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity=1.0, detail=6):
-    """
-    Generate a sphere in the viewer with given parameters.
-
-    Parameters
-    ----------
-    `center` — tuple (optional)
-        Center of the sphere (default: `(0,0,0)`)
-    `radius` — float (optional)
-        Sphere radius in angstrom (default: `0.1`)
-    `label` — str (optional)
-        The sphere label to be shown in the viewer (default: `"Sphere"`)
-    `color` — str (optional)
-        X11 color names (default: `'blue'`)
-        Avaliable options can be found at [here](https://www.w3.org/TR/css-color-3/#svg-color)
-    `opacity` — int (optional)
-        Transparency of the box. The value is ranging from 0 to 1.0. (default: `1.0`)
-    `detail` — int (optional)
-        Controls the subdivision surface of the sphere. The sphere is make of polygons. The higher
-        the value, the more it looks like a fine sphere. But also requires longer time to
-        render. The recommended value is 6.
-
-    Returns
-    -------
-    `dict`
-        Dict for the `data` parameter of MolstarViewer
-
-    Raises
-    ------
-    `ValueError`
-        Raised if input coordinates are not 3-dimensional
-    """
-    if len(center) != 3: raise ValueError("Coordinates must be 3-dimensional!")
-    return {
-        'type': 'shape',
-        'shape': 'sphere',
-        'center': center,
-        'radius': radius,
-        'label': label,
-        'color': color,
-        'alpha': opacity,
-        'detail': detail
-    }
-
-def get_cylinder(start=(0,0,0), end=(1,1,1), radius=0.1, label="Cylinder", color='yellow', opacity=1.0, dashed=False, dash_segments='auto'):
-    """
-    Generate a cylinder in the viewer with given parameters.
-
-    Parameters
-    ----------
-    `start` — tuple (optional)
-        Start point of the cylinder (default: `(0,0,0)`)
-    `end` — tuple (optional)
-        End point of the cylinder (default: `(1,1,1)`)
-    `radius` — float (optional)
-        Cylinder radius in angstrom (default: `0.1`)
-    `label` — str (optional)
-        The cylinder label to be shown in the viewer (default: `"Cylinder"`)
-    `color` — str (optional)
-        X11 color names (default: `'yellow'`)
-        Avaliable options can be found at [here](https://www.w3.org/TR/css-color-3/#svg-color)
-    `opacity` — float (optional)
-        Transparency of the box. The value is ranging from 0 to 1.0. (default: `1.0`)
-    `dashed` — bool (optional)
-        Whether to create a dashed cylinder (default: `False`)
-    `dash_segments` — str (optional)
-        Number of segments for the dashed cylinder, including gaps (default: `'auto'`)
-    """
-    if len(start) != 3: raise ValueError("Coordinates must be 3-dimensional!")
-    if len(end) != 3: raise ValueError("Coordinates must be 3-dimensional!")
-    
-    if dashed:
-        if dash_segments == 'auto':
-            length = ((start[0]-end[0])**2 + (start[1]-end[1])**2 + (start[2]-end[2])**2)**0.5
-            dash_segments = length * 3
-    
-    return {
-        'type': 'shape',
-        'shape': 'cylinder',
-        'start': start,
-        'end': end,
-        'props': {
-            'radiusTop': radius,
-            'radiusBottom': radius,
-            'radialSegments': 100,
-            'heightSegments': 100,
-            'topCap': True,
-            'bottomCap': True,
-        },
-        'label': label,
-        'color': color,
-        'alpha': opacity,
-        'dashed': dashed,
-        'dash_segments': dash_segments
-    }
-
 def get_targets(chain, residue=None, atom=None, auth=False):
     """
     Select residues from a given chain. If no residue was specified, the entire chain will be selected.
@@ -558,3 +420,31 @@ def get_measurement(targets, type='label', options=None, add=False):
         'type': type,
         'mode': 'add' if add else 'set',
     }
+
+# For backward compatibility, keep the old function names and mark them as deprecated
+def get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red', opacity=1.0):
+    import warnings
+    warnings.warn(
+        "get_box is deprecated and will be removed in future versions. Please use utils.shapes.create_box instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return create_box(min_xyz, max_xyz, radius, label, color, opacity)
+
+def get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity=1.0, detail=6):
+    import warnings
+    warnings.warn(
+        "get_sphere is deprecated and will be removed in future versions. Please use utils.shapes.create_sphere instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return create_sphere(center, radius, label, color, opacity, detail)
+
+def get_cylinder(start=(0,0,0), end=(1,1,1), radius=0.1, label="Cylinder", color='yellow', opacity=1.0, dashed=False, dash_segments='auto'):
+    import warnings
+    warnings.warn(
+        "get_cylinder is deprecated and will be removed in future versions. Please use utils.shapes.create_cylinder instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return create_cylinder(start, end, radius, label, color, opacity, dashed, dash_segments)

@@ -50,6 +50,7 @@ export default class MolstarViewer extends Component {
             focus: props.focus,
             frame: props.frame,
             measurement: props.measurement,
+            camera: props.camera,
             updatefocusonframechange: props.updatefocusonframechange,
             updateselectiononframechange: props.updateselectiononframechange,
         };
@@ -77,12 +78,12 @@ export default class MolstarViewer extends Component {
             this.loadedShapes = {};
             this.loadedStructures = {};
         }
-        // loading data - separate molecules/trajectories from shapes
-        // shapes depend on canvas3d being fully ready, so we load molecules first
+
+        // loading data
         if (data) {
             const molecules = [];
             const shapes = [];
-            
+
             if (Array.isArray(data)) {
                 for (const obj of data) {
                     if (obj.type === 'shape') {
@@ -98,13 +99,10 @@ export default class MolstarViewer extends Component {
                     molecules.push(data);
                 }
             }
-            
-            // Load molecules first (they may need time to initialize canvas3d properly)
+
             for (const mol of molecules) {
                 await this.loadData(mol);
             }
-            
-            // Then load shapes after molecules are loaded
             for (const shape of shapes) {
                 await this.loadShape(shape);
             }
@@ -188,6 +186,11 @@ export default class MolstarViewer extends Component {
             }
         }
         this.setState({measurement: measurements});
+    }
+    handleCameraChange(camera) {
+        if (camera) {
+            
+        }
     }
     bindingComponentToMolecule(data, model_index) {
         // binding structure ID to component
@@ -363,6 +366,18 @@ export default class MolstarViewer extends Component {
             ref = await this.viewer.createSphere(data.label, data.center, data.radius, data.color, data.alpha, data.detail);
         } else if (data.shape === 'cylinder') {
             ref = await this.viewer.createCylinder(data.label, data.start, data.end, data.color, data.alpha, data.props, data.dashed, data.dash_segments);
+        } else if (data.shape === 'plane') {
+            ref = await this.viewer.createPlane(data.label, data.center, data.dirMajor, data.dirMinor, data.scaleX, data.scaleY, data.color, data.alpha, data.doubleSided);
+        } else if (data.shape === 'axes') {
+            ref = await this.viewer.createAxes(data.label, data.origin, data.dirA, data.dirB, data.dirC, data.color, data.alpha, data.radiusScale);
+        } else if (data.shape === 'ellipsoid') {
+            ref = await this.viewer.createEllipsoid(data.label, data.center, data.dirMajor, data.dirMinor, data.radiusScale, data.color, data.alpha, data.detail);
+        } else if (data.shape === 'ribbon') {
+            ref = await this.viewer.createRibbon(data.label, data.controlPoints, data.normalVectors, data.binormalVectors, data.widthValues, data.color, data.alpha, data.linearSegments, data.arrowHeight);
+        } else if (data.shape === 'sheet') {
+            ref = await this.viewer.createSheet(data.label, data.controlPoints, data.normalVectors, data.binormalVectors, data.widthValues, data.heightValues, data.color, data.alpha, data.linearSegments, data.arrowHeight, data.startCap, data.endCap);
+        } else if (data.shape === 'tube') {
+            ref = await this.viewer.createTube(data.label, data.controlPoints, data.normalVectors, data.binormalVectors, data.widthValues, data.heightValues, data.color, data.alpha, data.linearSegments, data.radialSegments, data.startCap, data.endCap, data.crossSection, data.roundCap);
         }
         if (ref) {
             this.loadedShapes[data.label] = ref;
@@ -442,7 +457,7 @@ export default class MolstarViewer extends Component {
             });
 
             // Wait for plugin to be fully initialized before loading data
-            this.viewer._plugin.initialized.then(() => {
+            this.viewer._plugin.canvas3dInitialized.then(() => {
                 if (this.state.data) {
                     this.handleDataChange(this.state.data);
                 }
@@ -460,6 +475,9 @@ export default class MolstarViewer extends Component {
                 }
                 if (this.state.measurement) {
                     this.handleMeasurementChange(this.state.measurement);
+                }
+                if (this.state.camera) {
+                    this.handleCameraChange(this.state.camera);
                 }
                 if (this.state.updatefocusonframechange) {
                     this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
@@ -488,6 +506,9 @@ export default class MolstarViewer extends Component {
         }
         if (this.props.measurement !== prevProps.measurement) {
             this.handleMeasurementChange(this.props.measurement);
+        }
+        if (this.props.camera !== prevProps.camera) {
+            this.handleCameraChange(this.props.camera);
         }
         if (this.props.updatefocusonframechange !== prevProps.updatefocusonframechange) {
             this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
@@ -529,6 +550,7 @@ export default class MolstarViewer extends Component {
             focus={this.state.focus}
             frame={this.state.frame}
             measurement={this.state.measurement}
+            camera={this.state.camera}
             updatefocusonframechange={this.state.updatefocusonframechange}
             updateselectiononframechange={this.state.updateselectiononframechange}
             />
@@ -589,6 +611,11 @@ MolstarViewer.propTypes = {
      * The measurements in the molstar viewer.
      */
     measurement: PropTypes.any,
+
+    /**
+     * The camera object in the molstar viewer.
+     */
+    camera: PropTypes.any,
 
     /**
      * Update focus data when frame index have changed.
