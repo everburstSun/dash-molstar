@@ -1,14 +1,14 @@
 import dash_molstar
 import math
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
-from dash_molstar.utils import shapes
+from dash_molstar.helpers import parse_molecule
+from dash_molstar.helpers import shapes
 
 # ============================================
 # Basic Shape Tests
 # ============================================
 
-mol = molstar_helper.parse_molecule('3u7y.pdb')
+mol = parse_molecule('3u7y.pdb')
 box = shapes.create_box(min_xyz=(1,2,3), max_xyz=(4,5,6))
 sphere = shapes.create_sphere(center=(7,8,9), opacity=0.3)
 cylinder = shapes.create_cylinder(start=(0,0,0), end=(5,5,5), radius=0.2, color='red')
@@ -275,7 +275,7 @@ app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', 
       style={'width': '800px', 'height':'600px'},
-      data=all_shapes,  # Change to 'data' for minimal test
+      data=all_shapes
    )
 )
 
