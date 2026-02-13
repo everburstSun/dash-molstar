@@ -51,16 +51,41 @@ export default class MolstarViewer extends Component {
             frame: props.frame,
             measurement: props.measurement,
             camera: props.camera,
+            cameradebounce: props.cameraDebounce,
             updatefocusonframechange: props.updatefocusonframechange,
             updateselectiononframechange: props.updateselectiononframechange,
         };
         this.loadedShapes = {};
         this.loadedStructures = {};
+        this.prevCameraSnapshot = null;
+        this.cameraDebounceTimer = null;
+        this.isInternalCameraUpdate = false;
         this.viewerRef = createRef();
         const updatedLayout = Object.assign({}, this.state.layout, props.layout);
         this.state.layout = updatedLayout;
         const updatedStyle = Object.assign({}, this.state.style, props.style);
         this.state.style = updatedStyle;
+    }
+    areCameraSnapshotsEqual(a, b) {
+        if (!a || !b) return false;
+        const EPSILON = 1e-6;
+        const vec3Equal = (v1, v2) => {
+            if (!v1 || !v2) return false;
+            return Math.abs(v1[0] - v2[0]) < EPSILON &&
+                   Math.abs(v1[1] - v2[1]) < EPSILON &&
+                   Math.abs(v1[2] - v2[2]) < EPSILON;
+        };
+        return a.mode === b.mode &&
+               Math.abs(a.fov - b.fov) < EPSILON &&
+               Math.abs(a.radius - b.radius) < EPSILON &&
+               Math.abs(a.radiusMax - b.radiusMax) < EPSILON &&
+               Math.abs(a.fog - b.fog) < EPSILON &&
+               a.clipFar === b.clipFar &&
+               Math.abs(a.minNear - b.minNear) < EPSILON &&
+               Math.abs(a.minFar - b.minFar) < EPSILON &&
+               vec3Equal(a.position, b.position) &&
+               vec3Equal(a.up, b.up) &&
+               vec3Equal(a.target, b.target);
     }
     async handleDataChange(data) {
         // if new molecule was loaded into the viewer, clear the stage before loading
@@ -189,7 +214,22 @@ export default class MolstarViewer extends Component {
     }
     handleCameraChange(camera) {
         if (camera) {
-            
+            if (Array.isArray(camera)) {
+                // Minimum delay to ensure canvas renders each frame
+                const MIN_FRAME_DELAY = 20;
+                let delay = MIN_FRAME_DELAY;
+                for (const cam of camera) {
+                    const duration = cam.duration ?? 0;
+                    setTimeout(() => {
+                        this.viewer.setCamera(cam.camera, duration);
+                    }, delay);
+                    // Use at least MIN_FRAME_DELAY to ensure each frame is visible
+                    delay += Math.max(duration, MIN_FRAME_DELAY);
+                }
+            } else if (typeof camera === "object") {
+                this.viewer.setCamera(camera.camera, camera.duration??0);
+            }
+            this.setState({camera: camera});
         }
     }
     bindingComponentToMolecule(data, model_index) {
@@ -410,54 +450,88 @@ export default class MolstarViewer extends Component {
         if (this.viewerRef.current) {
             this.viewer = new rcsbMolstar.Viewer(this.viewerRef.current, this.state.layout);
 
-            // subscribe to focus change
-            this.focusSubscription = this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
-                if (this.viewer._plugin.disposed) {
-                    return;
-                }
-                if (this.viewer._plugin.managers.structure.focus.history.length > 0) {
-                    const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
-                    this.setState({focus: focusData});
-                    if (this.props.setProps) {
-                        this.props.setProps({focus: focusData});
-                    }
-                }
-            });
-
-            // subscribe to selection change
-            this.selectionSubscription = this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
-                if (this.viewer._plugin.disposed) {
-                    return;
-                }
-                const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
-                this.setState({selection: selectionData});
-                if (this.props.setProps) {
-                    this.props.setProps({selection: selectionData});
-                }
-            });
-
-            // subscribe to frame change
-            this.frameSubscription = this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
-                if (this.viewer._plugin.disposed) {
-                    return;
-                }
-                const frameData = this.viewer.getCurrentFrame(state);
-                this.setState({frame: frameData});
-                if (this.props.setProps) {
-                    this.props.setProps({frame: frameData});
-                }
-                if (this.state.updatefocusonframechange) {
-                    const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
-                    this.setState({focus: focusData});
-                }
-                if (this.state.updateselectiononframechange) {
-                    const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
-                    this.setState({selection: selectionData});
-                }
-            });
-
             // Wait for plugin to be fully initialized before loading data
             this.viewer._plugin.canvas3dInitialized.then(() => {
+                // subscribe to focus change
+                this.focusSubscription = this.viewer._plugin.managers.structure.focus.behaviors.current.subscribe(() => {
+                    if (this.viewer._plugin.disposed) {
+                        return;
+                    }
+                    if (this.viewer._plugin.managers.structure.focus.history.length > 0) {
+                        const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
+                        this.setState({focus: focusData});
+                        if (this.props.setProps) {
+                            this.props.setProps({focus: focusData});
+                        }
+                    }
+                });
+
+                // subscribe to selection change
+                this.selectionSubscription = this.viewer._plugin.managers.structure.selection.events.changed.subscribe(() => {
+                    if (this.viewer._plugin.disposed) {
+                        return;
+                    }
+                    const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
+                    this.setState({selection: selectionData});
+                    if (this.props.setProps) {
+                        this.props.setProps({selection: selectionData});
+                    }
+                });
+
+                // subscribe to frame change
+                this.frameSubscription = this.viewer._plugin.state.data.events.changed.subscribe(({ state }) => {
+                    if (this.viewer._plugin.disposed) {
+                        return;
+                    }
+                    const frameData = this.viewer.getCurrentFrame(state);
+                    this.setState({frame: frameData});
+                    if (this.props.setProps) {
+                        this.props.setProps({frame: frameData});
+                    }
+                    if (this.state.updatefocusonframechange) {
+                        const focusData = this.parseTargetsForPython(this.viewer.getCurrentFocus());
+                        this.setState({focus: focusData});
+                    }
+                    if (this.state.updateselectiononframechange) {
+                        const selectionData = this.parseTargetsForPython(this.viewer.getCurrentSelection());
+                        this.setState({selection: selectionData});
+                    }
+                });
+
+                // subscribe to camera change
+                this.cameraSubscription = this.viewer._plugin.canvas3d.didDraw.subscribe(() => {
+                    if (this.viewer._plugin.disposed) {
+                        return;
+                    }
+                    const snapshot = this.viewer._plugin.canvas3d.camera.getSnapshot();
+                    // Only trigger if camera actually changed
+                    if (!this.areCameraSnapshotsEqual(this.prevCameraSnapshot, snapshot)) {
+                        this.prevCameraSnapshot = snapshot;
+
+                        // Apply debounce for setProps callback
+                        const debounceMs = this.props.cameraDebounce ?? 100;
+                        if (debounceMs > 0) {
+                            if (this.cameraDebounceTimer) {
+                                clearTimeout(this.cameraDebounceTimer);
+                            }
+                            this.cameraDebounceTimer = setTimeout(() => {
+                                this.isInternalCameraUpdate = true;
+                                this.setState({camera: snapshot});
+                                if (this.props.setProps) {
+                                    this.props.setProps({camera: snapshot});
+                                }
+                            }, debounceMs);
+                        } else {
+                            this.isInternalCameraUpdate = true;
+                            this.setState({camera: snapshot});
+                            if (this.props.setProps) {
+                                this.props.setProps({camera: snapshot});
+                            }
+                        }
+                    }
+                });
+
+                // Load initial data if provided
                 if (this.state.data) {
                     this.handleDataChange(this.state.data);
                 }
@@ -508,7 +582,11 @@ export default class MolstarViewer extends Component {
             this.handleMeasurementChange(this.props.measurement);
         }
         if (this.props.camera !== prevProps.camera) {
-            this.handleCameraChange(this.props.camera);
+            if (this.isInternalCameraUpdate) {
+                this.isInternalCameraUpdate = false;
+            } else {
+                this.handleCameraChange(this.props.camera);
+            }
         }
         if (this.props.updatefocusonframechange !== prevProps.updatefocusonframechange) {
             this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
@@ -523,6 +601,11 @@ export default class MolstarViewer extends Component {
     }
 
     cleanupViewer() {
+        // Clear debounce timer
+        if (this.cameraDebounceTimer) {
+            clearTimeout(this.cameraDebounceTimer);
+            this.cameraDebounceTimer = null;
+        }
         // unsubscribe from all events
         this.focusSubscription.unsubscribe();
         this.focusSubscription = null;
@@ -530,6 +613,8 @@ export default class MolstarViewer extends Component {
         this.selectionSubscription = null;
         this.frameSubscription.unsubscribe();
         this.frameSubscription = null;
+        this.cameraSubscription.unsubscribe();
+        this.cameraSubscription = null;
         this.viewer._plugin.dispose();
         this.viewer = null;
 
@@ -551,6 +636,7 @@ export default class MolstarViewer extends Component {
             frame={this.state.frame}
             measurement={this.state.measurement}
             camera={this.state.camera}
+            cameradebounce={this.state.cameradebounce}
             updatefocusonframechange={this.state.updatefocusonframechange}
             updateselectiononframechange={this.state.updateselectiononframechange}
             />
@@ -616,6 +702,12 @@ MolstarViewer.propTypes = {
      * The camera object in the molstar viewer.
      */
     camera: PropTypes.any,
+
+    /**
+     * Debounce time in milliseconds for camera change events.
+     * Set to 0 to disable debounce. Default is 100ms.
+     */
+    cameradebounce: PropTypes.number,
 
     /**
      * Update focus data when frame index have changed.

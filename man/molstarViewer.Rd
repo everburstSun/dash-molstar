@@ -10,14 +10,20 @@ The Molstar viewer component for dash
 }
 
 \usage{
-molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, frame=NULL,
-hover=NULL, layout=NULL, measurement=NULL, selection=NULL,
-style=NULL, updatefocusonframechange=NULL,
+molstarViewer(id=NULL, camera=NULL, cameradebounce=NULL, className=NULL,
+data=NULL, focus=NULL, frame=NULL, hover=NULL, layout=NULL,
+measurement=NULL, selection=NULL, style=NULL,
+updatefocusonframechange=NULL,
 updateselectiononframechange=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
+
+\item{camera}{Logical | numeric | character | named list | unnamed list. The camera object in the molstar viewer.}
+
+\item{cameradebounce}{Numeric. Debounce time in milliseconds for camera change events.
+Set to 0 to disable debounce. Default is 100ms.}
 
 \item{className}{Character. The HTML property `class` for additional class names of the container of molstar viewer.}
 
