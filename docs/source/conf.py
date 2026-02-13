@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'dash-molstar'
-copyright = '2025, Simon Sun'
+copyright = '2026, Simon Sun'
 author = 'Simon Sun'
 release = '1.4.0'
 
