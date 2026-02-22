@@ -12,8 +12,8 @@ class Camera:
         self.__position: Vec3 = (0.0, 0.0, 100.0)
         self.__up: Vec3 = (0.0, 1.0, 0.0)
         self.__target: Vec3 = (0.0, 0.0, 0.0)
-        self.__radius: float = 100.0
-        self.__radiusMax: float = 100.0
+        self.__radius: float = 59.94
+        self.__radiusMax: float = 59.94
         self.__fog: float = 15.0
         self.__clipFar: bool = True
         self.__minNear: float = 5.0
@@ -268,7 +268,7 @@ class Camera:
             [values[6], values[7], values[8]]
         ]
 
-        # Camera offset in camera space (relative to target)
+        # Camera offset in camera space: position of target relative to camera
         cam_offset = (values[9], values[10], values[11])
 
         # Target/rotation center in world coordinates
@@ -282,12 +282,15 @@ class Camera:
         is_ortho = values[17] != 0
 
         # Transform camera offset from camera space to world space
-        # position = R^T * cam_offset + target
-        # (R^T because PyMOL stores the inverse rotation)
+        offset_world = (
+            rot[0][0] * cam_offset[0] + rot[1][0] * cam_offset[1] + rot[2][0] * cam_offset[2],
+            rot[0][1] * cam_offset[0] + rot[1][1] * cam_offset[1] + rot[2][1] * cam_offset[2],
+            rot[0][2] * cam_offset[0] + rot[1][2] * cam_offset[1] + rot[2][2] * cam_offset[2]
+        )
         position = (
-            rot[0][0] * cam_offset[0] + rot[1][0] * cam_offset[1] + rot[2][0] * cam_offset[2] + target[0],
-            rot[0][1] * cam_offset[0] + rot[1][1] * cam_offset[1] + rot[2][1] * cam_offset[2] + target[1],
-            rot[0][2] * cam_offset[0] + rot[1][2] * cam_offset[1] + rot[2][2] * cam_offset[2] + target[2]
+            target[0] - offset_world[0],
+            target[1] - offset_world[1],
+            target[2] - offset_world[2]
         )
 
         # Up vector is the second row of the transposed rotation matrix
@@ -304,331 +307,12 @@ class Camera:
 
         return cls({
             'mode': 'orthographic' if is_ortho else 'perspective',
-            'fov': 45.0,  # PyMOL default FOV
+            'fov': math.radians(abs(values[17])),
             'position': position,
             'up': up,
             'target': target,
             'radius': radius,
             'radiusMax': max(radius, rear_clip),
-            'minNear': max(1.0, front_clip) if front_clip > 0 else 5.0,
-            'minFar': 1.0
-        })
-
-    @classmethod
-    def from_chimera_view(cls, view: str) -> 'Camera':
-        """
-        Create a Camera from Chimera/ChimeraX matrixset format.
-
-        Chimera matrix format (from `matrixget` command) is 3 rows x 4 columns:
-        ```
-        Model 0.0
-            r00 r01 r02 tx
-            r10 r11 r12 ty
-            r20 r21 r22 tz
-        ```
-
-        Each row contains 3 rotation matrix elements plus 1 translation component.
-        This represents a 3x4 transformation matrix [R|t].
-
-        For camera view (from `cofr` and `view` commands), the format may also be:
-        ```
-        center: x y z
-        viewSize: s
-        ```
-
-        Parameters
-        ----------
-        `view` — str
-            String output from Chimera's matrixget or view commands
-
-        Returns
-        -------
-        `Camera`
-            A new Camera instance with converted settings
-
-        Example
-        -------
-        >>> view_str = '''Model 0.0
-        ...     0.688816 0.672651 -0.270321 -3.40168
-        ...     0.327689 0.0437142 0.943774 1.87208
-        ...     0.646647 -0.738668 -0.190309 11.6143'''
-        >>> camera = Camera.from_chimera_view(view_str)
-        """
-        lines = [l.strip() for l in view.strip().split('\n') if l.strip()]
-
-        rot = []
-        translation = [0.0, 0.0, 0.0]
-        center = None
-        view_size = None
-
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-
-            # Skip model header lines
-            if line.startswith('Model') or line.startswith('model'):
-                i += 1
-                continue
-
-            # Check for center directive
-            if line.lower().startswith('center:'):
-                parts = line.split(':')[1].strip().split()
-                center = tuple(float(x) for x in parts[:3])
-                i += 1
-                continue
-
-            # Check for viewSize directive
-            if line.lower().startswith('viewsize:'):
-                view_size = float(line.split(':')[1].strip())
-                i += 1
-                continue
-
-            # Try to parse as matrix rows (3 rotation values + 1 translation per row)
-            parts = line.split()
-            if len(parts) >= 4:
-                try:
-                    # Each row: r0 r1 r2 t
-                    row_rot = [float(parts[0]), float(parts[1]), float(parts[2])]
-                    row_trans = float(parts[3])
-                    if len(rot) < 3:
-                        rot.append(row_rot)
-                        translation[len(rot) - 1] = row_trans
-                except ValueError:
-                    pass
-            elif len(parts) == 3:
-                # Fallback: 3-column format (rotation only)
-                try:
-                    row = [float(x) for x in parts[:3]]
-                    if len(rot) < 3:
-                        rot.append(row)
-                except ValueError:
-                    pass
-            i += 1
-
-        # Default values if not found
-        if center is None:
-            center = (0.0, 0.0, 0.0)
-        if view_size is None:
-            view_size = 100.0
-        if len(rot) < 3:
-            rot = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        translation = tuple(translation)
-
-        # The model matrix in Chimera transforms model coords to camera coords
-        # We need to invert this to get camera position in world coords
-
-        # Target is at the center (or translated center)
-        target = (
-            center[0] + translation[0],
-            center[1] + translation[1], 
-            center[2] + translation[2]
-        )
-
-        # Camera looks down -Z axis in camera space
-        # Position is behind the target along the viewing direction
-        distance = view_size * 2.5  # Approximate conversion factor
-
-        # The rotation matrix columns give us the camera axes
-        # Camera position = target + distance * viewing_direction
-        # Viewing direction is the third column of transposed rotation (or third row of rotation)
-        view_dir = (rot[2][0], rot[2][1], rot[2][2])
-        dir_len = math.sqrt(view_dir[0]**2 + view_dir[1]**2 + view_dir[2]**2)
-        if dir_len > 0:
-            view_dir = (view_dir[0]/dir_len, view_dir[1]/dir_len, view_dir[2]/dir_len)
-
-        position = (
-            target[0] - view_dir[0] * distance,
-            target[1] - view_dir[1] * distance,
-            target[2] - view_dir[2] * distance
-        )
-
-        # Up vector is the second row of rotation matrix
-        up = (rot[1][0], rot[1][1], rot[1][2])
-        up_len = math.sqrt(up[0]**2 + up[1]**2 + up[2]**2)
-        if up_len > 0:
-            up = (up[0]/up_len, up[1]/up_len, up[2]/up_len)
-
-        return cls({
-            'mode': 'perspective',
-            'fov': 45.0,
-            'position': position,
-            'up': up,
-            'target': target,
-            'radius': view_size,
-            'radiusMax': view_size * 2,
             'minNear': 5.0,
-            'minFar': 1.0
-        })
-
-    @classmethod
-    def from_vmd_view(cls, view: str) -> 'Camera':
-        """
-        Create a Camera from VMD display/molinfo settings.
-
-        VMD view can be obtained via several methods:
-        1. `display get` commands for projection settings
-        2. `molinfo top get {center_matrix rotate_matrix scale_matrix global_matrix}`
-
-        Expected format (from VMD Tcl console):
-        ```
-        rotate_matrix: {{r00 r01 r02 r03} {r10 r11 r12 r13} {r20 r21 r22 r23} {r30 r31 r32 r33}}
-        center_matrix: {{1 0 0 cx} {0 1 0 cy} {0 0 1 cz} {0 0 0 1}}
-        scale_matrix: {{s 0 0 0} {0 s 0 0} {0 0 s 0} {0 0 0 1}}
-        global_matrix: {{1 0 0 tx} {0 1 0 ty} {0 0 1 tz} {0 0 0 1}}
-        ```
-
-        Or simplified format:
-        ```
-        center: x y z
-        rotate: r00 r01 r02 r10 r11 r12 r20 r21 r22
-        scale: s
-        translate: tx ty tz
-        projection: perspective|orthographic
-        nearclip: n
-        farclip: f
-        ```
-
-        Parameters
-        ----------
-        `view` — str
-            String containing VMD view settings
-
-        Returns
-        -------
-        `Camera`
-            A new Camera instance with converted settings
-
-        Example
-        -------
-        >>> view_str = '''center: 10.0 20.0 30.0
-        ... rotate: 1 0 0 0 1 0 0 0 1
-        ... scale: 0.05
-        ... translate: 0 0 -50
-        ... projection: perspective'''
-        >>> camera = Camera.from_vmd_view(view_str)
-        """
-        # Default values
-        center = [0.0, 0.0, 0.0]
-        rotation = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        scale = 1.0
-        translate = [0.0, 0.0, 0.0]
-        projection = 'perspective'
-        near_clip = 5.0
-        far_clip = 1000.0
-
-        lines = view.strip().split('\n')
-
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Parse center
-            if line.lower().startswith('center:') or line.lower().startswith('center_matrix:'):
-                # Extract numbers
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if len(nums) >= 3:
-                    # For center_matrix, find the translation components (indices 3, 7, 11)
-                    if 'matrix' in line.lower() and len(nums) >= 12:
-                        center = [float(nums[3]), float(nums[7]), float(nums[11])]
-                    else:
-                        center = [float(nums[0]), float(nums[1]), float(nums[2])]
-
-            # Parse rotation
-            elif line.lower().startswith('rotate:') or line.lower().startswith('rotate_matrix:'):
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if 'matrix' in line.lower() and len(nums) >= 16:
-                    # 4x4 matrix format
-                    rotation = [
-                        [float(nums[0]), float(nums[1]), float(nums[2])],
-                        [float(nums[4]), float(nums[5]), float(nums[6])],
-                        [float(nums[8]), float(nums[9]), float(nums[10])]
-                    ]
-                elif len(nums) >= 9:
-                    # 3x3 rotation values
-                    rotation = [
-                        [float(nums[0]), float(nums[1]), float(nums[2])],
-                        [float(nums[3]), float(nums[4]), float(nums[5])],
-                        [float(nums[6]), float(nums[7]), float(nums[8])]
-                    ]
-
-            # Parse scale
-            elif line.lower().startswith('scale:') or line.lower().startswith('scale_matrix:'):
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if nums:
-                    scale = float(nums[0])
-
-            # Parse translate/global
-            elif line.lower().startswith('translate:') or line.lower().startswith('global_matrix:'):
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if 'matrix' in line.lower() and len(nums) >= 12:
-                    translate = [float(nums[3]), float(nums[7]), float(nums[11])]
-                elif len(nums) >= 3:
-                    translate = [float(nums[0]), float(nums[1]), float(nums[2])]
-
-            # Parse projection mode
-            elif line.lower().startswith('projection:'):
-                if 'ortho' in line.lower():
-                    projection = 'orthographic'
-                else:
-                    projection = 'perspective'
-
-            # Parse clipping planes
-            elif line.lower().startswith('nearclip:'):
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if nums:
-                    near_clip = float(nums[0])
-
-            elif line.lower().startswith('farclip:'):
-                nums = re.findall(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', line)
-                if nums:
-                    far_clip = float(nums[0])
-
-        # VMD uses a different coordinate system
-        # The center is negated and transformed
-        target = (
-            -center[0] + translate[0],
-            -center[1] + translate[1],
-            -center[2] + translate[2]
-        )
-
-        # VMD scale affects the viewing distance
-        # Smaller scale = further away
-        if scale > 0:
-            distance = 50.0 / scale  # Approximate conversion
-        else:
-            distance = 100.0
-
-        # Calculate camera position
-        # View direction is the third column of rotation matrix (looking down -Z)
-        view_dir = (rotation[0][2], rotation[1][2], rotation[2][2])
-        dir_len = math.sqrt(view_dir[0]**2 + view_dir[1]**2 + view_dir[2]**2)
-        if dir_len > 0:
-            view_dir = (view_dir[0]/dir_len, view_dir[1]/dir_len, view_dir[2]/dir_len)
-
-        position = (
-            target[0] - view_dir[0] * distance,
-            target[1] - view_dir[1] * distance,
-            target[2] - view_dir[2] * distance
-        )
-
-        # Up vector is the second row of rotation
-        up = (rotation[0][1], rotation[1][1], rotation[2][1])
-        up_len = math.sqrt(up[0]**2 + up[1]**2 + up[2]**2)
-        if up_len > 0:
-            up = (up[0]/up_len, up[1]/up_len, up[2]/up_len)
-
-        # Estimate radius from clipping planes
-        radius = (far_clip - near_clip) / 2.0 if far_clip > near_clip else distance / 2.0
-
-        return cls({
-            'mode': projection,
-            'fov': 45.0,
-            'position': position,
-            'up': up,
-            'target': target,
-            'radius': radius,
-            'radiusMax': max(radius, far_clip),
-            'minNear': max(1.0, near_clip),
-            'minFar': 1.0
+            'minFar': 0
         })

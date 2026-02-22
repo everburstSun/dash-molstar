@@ -41,7 +41,8 @@ app.layout = html.Div([
                 id='viewer',
                 style={'width': 'auto', 'height': '600px'},
                 data=mol,
-                cameradebounce=100
+                cameradebounce=100,
+                cameraresponddrag=True,
             )
         ], width=6),
         
@@ -79,7 +80,7 @@ app.layout = html.Div([
             # FOV
             dbc.InputGroup([
                 dbc.InputGroupText("FOV (rad)"),
-                dbc.Input(id='camera-fov', type='number', value=0.7854, step=0.1),
+                dbc.Input(id='camera-fov', type='number', value=0.7854),
             ], className="mb-2"),
             
             html.Hr(),
@@ -90,19 +91,19 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("x"),
-                        dbc.Input(id='camera-pos-x', type='number', value=0, step=1),
+                        dbc.Input(id='camera-pos-x', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("y"),
-                        dbc.Input(id='camera-pos-y', type='number', value=0, step=1),
+                        dbc.Input(id='camera-pos-y', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("z"),
-                        dbc.Input(id='camera-pos-z', type='number', value=100, step=1),
+                        dbc.Input(id='camera-pos-z', type='number', value=100),
                     ], size="sm"),
                 ], width=4),
             ], className="mb-2"),
@@ -113,19 +114,19 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("x"),
-                        dbc.Input(id='camera-target-x', type='number', value=0, step=1),
+                        dbc.Input(id='camera-target-x', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("y"),
-                        dbc.Input(id='camera-target-y', type='number', value=0, step=1),
+                        dbc.Input(id='camera-target-y', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("z"),
-                        dbc.Input(id='camera-target-z', type='number', value=0, step=1),
+                        dbc.Input(id='camera-target-z', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
             ], className="mb-2"),
@@ -136,19 +137,19 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("x"),
-                        dbc.Input(id='camera-up-x', type='number', value=0, step=0.1),
+                        dbc.Input(id='camera-up-x', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("y"),
-                        dbc.Input(id='camera-up-y', type='number', value=1, step=0.1),
+                        dbc.Input(id='camera-up-y', type='number', value=11),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("z"),
-                        dbc.Input(id='camera-up-z', type='number', value=0, step=0.1),
+                        dbc.Input(id='camera-up-z', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
             ], className="mb-2"),
@@ -160,13 +161,13 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("Radius"),
-                        dbc.Input(id='camera-radius', type='number', value=50, step=1),
+                        dbc.Input(id='camera-radius', type='number', value=50),
                     ], size="sm"),
                 ], width=6),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("RadiusMax"),
-                        dbc.Input(id='camera-radius-max', type='number', value=100, step=1),
+                        dbc.Input(id='camera-radius-max', type='number', value=100),
                     ], size="sm"),
                 ], width=6),
             ], className="mb-2"),
@@ -176,19 +177,19 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("Fog"),
-                        dbc.Input(id='camera-fog', type='number', value=50, step=1),
+                        dbc.Input(id='camera-fog', type='number', value=50),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("MinNear"),
-                        dbc.Input(id='camera-min-near', type='number', value=5, step=0.5),
+                        dbc.Input(id='camera-min-near', type='number', value=5),
                     ], size="sm"),
                 ], width=4),
                 dbc.Col([
                     dbc.InputGroup([
                         dbc.InputGroupText("MinFar"),
-                        dbc.Input(id='camera-min-far', type='number', value=0, step=0.5),
+                        dbc.Input(id='camera-min-far', type='number', value=0),
                     ], size="sm"),
                 ], width=4),
             ], className="mb-2"),
