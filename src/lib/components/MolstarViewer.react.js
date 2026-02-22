@@ -1,6 +1,7 @@
 import React, {Component, createRef} from 'react';
 import PropTypes from 'prop-types';
 import {ColorNames} from 'molstar/lib/mol-util/color/names';
+import { Camera } from 'molstar/lib/mol-canvas3d/camera';
 
 /**
  * The Molstar viewer component for dash
@@ -51,7 +52,9 @@ export default class MolstarViewer extends Component {
             frame: props.frame,
             measurement: props.measurement,
             camera: props.camera,
-            cameradebounce: props.cameraDebounce,
+            cameradebounce: props.cameradebounce,
+            cameraresponddrag: props.cameraresponddrag,
+            screenshot: props.screenshot,
             updatefocusonframechange: props.updatefocusonframechange,
             updateselectiononframechange: props.updateselectiononframechange,
         };
@@ -230,6 +233,49 @@ export default class MolstarViewer extends Component {
                 this.viewer.setCamera(camera.camera, camera.duration??0);
             }
             this.setState({camera: camera});
+        }
+    }
+    isCompleteCameraSnapshot(snapshot) {
+        const requiredKeys = Object.keys(Camera.createDefaultSnapshot());
+        return snapshot && requiredKeys.every(key => snapshot[key] !== undefined);
+    }
+    updateCameraParameters(snapshot) {
+        if (this.viewer._plugin.disposed) {
+            return;
+        }
+        const snap = snapshot ?? this.viewer._plugin.canvas3d.camera.getSnapshot();
+
+        if (!this.isCompleteCameraSnapshot(snap)) return;
+
+        // Only trigger if camera actually changed
+        if (!this.areCameraSnapshotsEqual(this.prevCameraSnapshot, snap)) {
+            this.prevCameraSnapshot = snap;
+
+            // Apply debounce for setProps callback
+            const debounceMs = this.props.cameraDebounce ?? 100;
+            if (debounceMs > 0) {
+                if (this.cameraDebounceTimer) {
+                    clearTimeout(this.cameraDebounceTimer);
+                }
+                this.cameraDebounceTimer = setTimeout(() => {
+                    this.isInternalCameraUpdate = true;
+                    this.setState({camera: snap});
+                    if (this.props.setProps) {
+                        this.props.setProps({camera: snap});
+                    }
+                }, debounceMs);
+            } else {
+                this.isInternalCameraUpdate = true;
+                this.setState({camera: snap});
+                if (this.props.setProps) {
+                    this.props.setProps({camera: snap});
+                }
+            }
+        }
+    }
+    handleScreenshotChange(screenshot) {
+        if (screenshot) {
+            this.viewer.downloadScreenshot(screenshot.filename, screenshot.params, screenshot.crop);
         }
     }
     bindingComponentToMolecule(data, model_index) {
@@ -499,38 +545,11 @@ export default class MolstarViewer extends Component {
                 });
 
                 // subscribe to camera change
-                this.cameraSubscription = this.viewer._plugin.canvas3d.didDraw.subscribe(() => {
-                    if (this.viewer._plugin.disposed) {
-                        return;
-                    }
-                    const snapshot = this.viewer._plugin.canvas3d.camera.getSnapshot();
-                    // Only trigger if camera actually changed
-                    if (!this.areCameraSnapshotsEqual(this.prevCameraSnapshot, snapshot)) {
-                        this.prevCameraSnapshot = snapshot;
-
-                        // Apply debounce for setProps callback
-                        const debounceMs = this.props.cameraDebounce ?? 100;
-                        if (debounceMs > 0) {
-                            if (this.cameraDebounceTimer) {
-                                clearTimeout(this.cameraDebounceTimer);
-                            }
-                            this.cameraDebounceTimer = setTimeout(() => {
-                                this.isInternalCameraUpdate = true;
-                                this.setState({camera: snapshot});
-                                if (this.props.setProps) {
-                                    this.props.setProps({camera: snapshot});
-                                }
-                            }, debounceMs);
-                        } else {
-                            this.isInternalCameraUpdate = true;
-                            this.setState({camera: snapshot});
-                            if (this.props.setProps) {
-                                this.props.setProps({camera: snapshot});
-                            }
-                        }
-                    }
-                });
-
+                if (this.state.cameraresponddrag) {
+                    this.cameraSubscription = this.viewer._plugin.canvas3d.didDraw.subscribe(() => this.updateCameraParameters());
+                } else {
+                    this.cameraSubscription = this.viewer._plugin.canvas3d.camera.stateChanged.subscribe((state) => this.updateCameraParameters(state));
+                }
                 // Load initial data if provided
                 if (this.state.data) {
                     this.handleDataChange(this.state.data);
@@ -552,6 +571,9 @@ export default class MolstarViewer extends Component {
                 }
                 if (this.state.camera) {
                     this.handleCameraChange(this.state.camera);
+                }
+                if (this.state.screenshot) {
+                    this.handleScreenshotChange(this.state.screenshot);
                 }
                 if (this.state.updatefocusonframechange) {
                     this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
@@ -587,6 +609,9 @@ export default class MolstarViewer extends Component {
             } else {
                 this.handleCameraChange(this.props.camera);
             }
+        }
+        if (this.props.screenshot !== prevProps.screenshot) {
+            this.handleScreenshotChange(this.props.screenshot);
         }
         if (this.props.updatefocusonframechange !== prevProps.updatefocusonframechange) {
             this.setState({updatefocusonframechange: this.props.updatefocusonframechange});
@@ -637,6 +662,8 @@ export default class MolstarViewer extends Component {
             measurement={this.state.measurement}
             camera={this.state.camera}
             cameradebounce={this.state.cameradebounce}
+            cameraresponddrag={this.state.cameraresponddrag}
+            screenshot={this.state.screenshot}
             updatefocusonframechange={this.state.updatefocusonframechange}
             updateselectiononframechange={this.state.updateselectiononframechange}
             />
@@ -708,6 +735,19 @@ MolstarViewer.propTypes = {
      * Set to 0 to disable debounce. Default is 100ms.
      */
     cameradebounce: PropTypes.number,
+
+    /**
+     * Whether to respond to drag events of the camera.
+     * Set to false to disable camera parameter updates while dragging
+     * with mouse keys, or scrolling.
+     */
+    cameraresponddrag: PropTypes.bool,
+
+    /**
+     * The screenshot object containing the options for taking 
+     * screenshot of the current view in molstar viewer.
+     */
+    screenshot: PropTypes.object,
 
     /**
      * Update focus data when frame index have changed.
