@@ -15,7 +15,7 @@ supported_formats = {
     'coords': ["dcd", "xtc", "trr", "nctraj", "lammpstrj"],
 }
 
-def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
+def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}, matrix=None):
     """
     Parse the molecule for `data` parameter of molstar viewer.
 
@@ -36,6 +36,9 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         Use helper function `create_component` to generate correct data for this parameter.
     `preset` — dict (optional)
         The preset for molstar of how to display the loaded structure file.
+    `matrix` — numpy.ndarray (optional)
+        The homogeneous transformation matrix for the molecule. 
+        Only rigid transformations are allowed.
 
     Returns
     -------
@@ -90,16 +93,16 @@ def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}):
         "type": 'mol',
         "data": data,
         "format": fmt,
-        "preset": preset
+        "preset": preset,
+        "matrix": None if matrix is None else matrix.T.flatten().tolist()
     }
     if component: d['component'] = component
     return d
 
-def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'}):
+def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'}, matrix=None):
     """
     Parse the URL for `data` parameter of molstar viewer. 
-    The url can be either a structure or a molstar state/session file. If a state/session
-    was provided, the `mol` parameter should be set to `False`.
+    The url can be either a structure or a molstar state/session file.
 
     Parameters
     ----------
@@ -121,6 +124,9 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
     `mol` — DEPRECATED
     `preset` — dict (optional)
         The preset for molstar of how to display the loaded structure file.
+    `matrix` — numpy.ndarray (optional)
+        The homogeneous transformation matrix for the molecule.
+        Only rigid transformations are allowed.
 
     Returns
     -------
@@ -166,7 +172,8 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
         "urlfor": urlfor,
         "data": url,
         "format": fmt,
-        "preset": preset
+        "preset": preset,
+        "matrix": None if matrix is None else matrix.T.flatten().tolist()
     }
     if component: d['component'] = component
     return d
