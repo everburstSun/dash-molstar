@@ -2,6 +2,7 @@ import React, {Component, createRef} from 'react';
 import PropTypes from 'prop-types';
 import {ColorNames} from 'molstar/lib/mol-util/color/names';
 import { Camera } from 'molstar/lib/mol-canvas3d/camera';
+import { Mat4 } from 'molstar/lib/mol-math/linear-algebra';
 
 /**
  * The Molstar viewer component for dash
@@ -399,7 +400,8 @@ export default class MolstarViewer extends Component {
             if (data.type === "mol") { // loading a structure
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(data.preset);
-                const result = await this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset});
+                const matrix = data.matrix ? Mat4.fromArray(Mat4.zero(), data.matrix, 0) : undefined;
+                const result = await this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset, matrix: matrix});
                 // add the structure ID to this.loadedStructures
                 this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                 // if user specified component(s), add them to the structure
@@ -412,7 +414,8 @@ export default class MolstarViewer extends Component {
                 if (data.urlfor === 'mol') { // loading a structure from URL
                     // handle the target key in preset
                     this.parseTargetsForMoleculePresets(data.preset);
-                    const result = await this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset});
+                    const matrix = data.matrix ? Mat4.fromArray(Mat4.zero(), data.matrix, 0) : undefined;
+                    const result = await this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset, matrix: matrix});
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                     // if user specified component(s), add them to the structure
@@ -427,7 +430,8 @@ export default class MolstarViewer extends Component {
                 const { topo, coords } = data;
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(topo.preset);
-                const result = await this.viewer.loadTrajectory(topo, coords, {props: topo.preset});
+                const matrix = topo.matrix ? Mat4.fromArray(Mat4.zero(), topo.matrix, 0) : undefined;
+                const result = await this.viewer.loadTrajectory(topo, coords, {props: topo.preset, matrix: matrix});
                 // add the structure ID to this.loadedStructures
                 this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
                 // if user specified component(s), add them to the structure
