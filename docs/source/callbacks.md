@@ -3,10 +3,12 @@
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera
 ```
 
 # Using Callbacks
@@ -18,7 +20,7 @@ Assuming that you have already created a `MolstarViewer` with `id='viewer'` and 
 ```py
 import dash_molstar
 from dash import Dash, callback, html, Input, Output
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_molecule, parse_url
 
 app = Dash(__name__)
 app.layout = html.Div(
@@ -38,7 +40,7 @@ The `data` property is used to set the data displayed in the viewer. Now let's l
           Input('load_protein', 'n_clicks'),
           prevent_initial_call=True)
 def display_output(yes):
-    data = molstar_helper.parse_molecule('3u7y.pdb')
+    data = parse_molecule('3u7y.pdb')
     return data
 ```
 
@@ -49,9 +51,9 @@ You can also let molstar to fetch a remote url. Remember to specify the file for
           Input('load_protein', 'n_clicks'),
           prevent_initial_call=True)
 def display_output(yes):
-    data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.pdb')
+    data = parse_url('https://files.rcsb.org/download/3U7Y.pdb')
     # or a CIF file instead
-    # data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.cif')
+    # data = parse_url('https://files.rcsb.org/download/3U7Y.cif')
     return data
 ```
 
@@ -66,13 +68,13 @@ from rdkit.Chem import AllChem
 def display_output(yes):
     data = []
     # append "3u7y.pdb" into data
-    data.append(molstar_helper.parse_molecule('3u7y.pdb'))
+    data.append(parse_molecule('3u7y.pdb'))
     # append a new molecule Acetophenone to data
     mol = AllChem.MolFromSmiles("CC(C1=CC=CC=C1)=O")
     AllChem.Compute2DCoords(mol)
     PDBBlock = AllChem.MolToPDBBlock(mol)
     # Without a filename to infer format, the format has to be specified manually
-    data.append(molstar_helper.parse_molecule(PDBBlock, fmt='pdb'))
+    data.append(parse_molecule(PDBBlock, fmt='pdb'))
     return data
 ```
 
@@ -87,7 +89,7 @@ You can use shapes like a Bounding Box to highlight a region on the structure. I
 import dash_molstar
 import dash_bootstrap_components as dbc
 from dash import html, callback, Dash, Input, Output
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_box, get_targets, get_focus, get_selection
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -160,7 +162,7 @@ app.layout = dbc.Container(content)
 def updateBox(center_x,center_y,center_z,size_x,size_y,size_z):
     _min = (center_x-size_x/2, center_y-size_y/2, center_z-size_z/2)
     _max = (center_x+size_x/2, center_y+size_y/2, center_z+size_z/2)
-    box = molstar_helper.get_box(_min, _max)
+    box = get_box(_min, _max)
     return box
 ```
 
@@ -175,8 +177,8 @@ The `focus` property allows you to focus on a specific target. This equivalent t
           Input('focus-cdr', 'n_clicks'),
           prevent_initial_call=True)
 def focus_CDR(yes):
-    CDR = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
-    cdr = molstar_helper.get_focus(CDR, analyse=True)
+    CDR = get_targets(chain="L", residue=[24,25,26,27])
+    cdr = get_focus(CDR, analyse=True)
 
     return cdr
 ```
@@ -184,7 +186,7 @@ def focus_CDR(yes):
 If you wish to get which target that the user is focusing on, you can also retrieve data from this property:
 
 ```py
-from dash_molstar.utils.target import Target
+from dash_molstar.utils import Target
 
 @callback(Input('viewer', 'focus'),
           prevent_initial_call=True)
@@ -211,8 +213,8 @@ You can choose not to analyze the non-covalent interactions by specifing `analys
           Input('focus-cdr', 'n_clicks'),
           prevent_initial_call=True)
 def focus_CDR(yes):
-    CDR = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
-    cdr = molstar_helper.get_focus(CDR, analyse=False)
+    CDR = get_targets(chain="L", residue=[24,25,26,27])
+    cdr = get_focus(CDR, analyse=False)
 
     return cdr
 ```
@@ -237,8 +239,8 @@ If you have a button on your webpage with the id `'highlight-cdr'`, the followin
           Input('highlight-cdr', 'n_clicks'),
           prevent_initial_call=True)
 def highlight_CDR(yes):
-    CDR = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
-    cdr = molstar_helper.get_selection(CDR)
+    CDR = get_targets(chain="L", residue=[24,25,26,27])
+    cdr = get_selection(CDR)
 
     return cdr
 ```
@@ -254,8 +256,8 @@ If you have a button on your webpage with the id `'select-cdr'`, the following c
           Input('select-cdr', 'n_clicks'),
           prevent_initial_call=True)
 def select_CDR(yes):
-    CDR = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
-    cdr = molstar_helper.get_selection(CDR)
+    CDR = get_targets(chain="L", residue=[24,25,26,27])
+    cdr = get_selection(CDR)
 
     return cdr
 ```
@@ -263,7 +265,7 @@ def select_CDR(yes):
 Like `focus`, you can also retrieve data from `selection`. You should use the [](targets.md) class to parse the incoming data:
 
 ```py
-from dash_molstar.utils.target import Target
+from dash_molstar.utils import Target
 
 @callback(Input('viewer', 'selection'),
           prevent_initial_call=True)
@@ -293,7 +295,7 @@ Furthermore, you can combine `hover` and `focus` together. Assuming that we have
 ```py
 import dash_molstar
 from dash import Dash, callback, html, Input, Output, dcc, ctx
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_molecule, get_targets, get_focus, get_selection
 import dash
 import pandas as pd
 import plotly.express as px
@@ -312,7 +314,7 @@ app.layout = html.Div(
           Input('load_protein', 'n_clicks'),
           prevent_initial_call=True)
 def display_output(yes):
-    data = molstar_helper.parse_molecule('3u7y.pdb')
+    data = parse_molecule('3u7y.pdb')
     return data
 
 @callback(Output('viewer', 'hover'),
@@ -330,13 +332,13 @@ def mouse_event(hoverData, clickData):
         data = clickData
         select = True
         focus = True
-    if not data: return molstar_helper.get_selection(None, add=False), focusdata
+    if not data: return get_selection(None, add=False), focusdata
     residue1 = data['points'][0]['x']
-    residue1 = molstar_helper.get_targets(residue1[0], residue1[1:])
+    residue1 = get_targets(residue1[0], residue1[1:])
     residue2 = data['points'][0]['y']
-    residue2 = molstar_helper.get_targets(residue2[0], residue2[1:])
-    seldata = molstar_helper.get_selection([residue1, residue2], add=False)
-    if focus: focusdata = molstar_helper.get_focus([residue1, residue2], analyse=True)
+    residue2 = get_targets(residue2[0], residue2[1:])
+    seldata = get_selection([residue1, residue2], add=False)
+    if focus: focusdata = get_focus([residue1, residue2], analyse=True)
     return seldata, focusdata
 ```
 
@@ -347,7 +349,7 @@ This property is used to add measurements into the viewer.
 There are 6 measurement types in total in molstar viewer: `label`, `orientation`, `plane`, `distance`, `angle` and `dihedral`. Users can use the helper function `get_measurement` to create one or more measurements for the loaded structure.
 
 ```py
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_targets, get_measurement
 from dash import callback, Input, Output
 
 @callback(Output('viewer', 'measurement'),
@@ -355,10 +357,10 @@ from dash import callback, Input, Output
           prevent_initial_call=True)
 def add_measurement(yes):
     distance_atoms = [
-        molstar_helper.get_targets("A", 24, 187),
-        molstar_helper.get_targets("A", 28, 220),
+        get_targets("A", 24, 187),
+        get_targets("A", 28, 220),
     ]
-    measurement = molstar_helper.get_measurement(distance_atoms, 'distance')
+    measurement = get_measurement(distance_atoms, 'distance')
     return measurement
 ```
 
@@ -390,8 +392,8 @@ import os
 import dash_molstar
 import dash_bootstrap_components as dbc
 from dash import html, callback, Dash, clientside_callback, dcc, Input, Output
-from dash_molstar.utils import molstar_helper
-from dash_molstar.utils.representations import Representation
+from dash_molstar.helpers import get_targets, create_component, parse_molecule, parse_coordinate, get_trajectory
+from dash_molstar.utils import Representation
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -416,18 +418,18 @@ content = dbc.Row([
           Input('load_traj', 'n_clicks'),
           prevent_initial_call=True)
 def load_traj(yes):
-    chainA = molstar_helper.get_targets(chain="A")
+    chainA = get_targets(chain="A")
 
     cartoon = Representation('cartoon', 'secondary-structure', 'uniform')
     surface = Representation('gaussian-surface', 'uniform', 'physical')
     surface.set_type_params({'radiusOffset': 0.3, 'ignoreHydrogens': True, 'alpha': 0.1})
     surface.set_color_params({'value': 0x009CE0})
-    polymer = molstar_helper.create_component("polymer", chainA, [cartoon, surface])
+    polymer = create_component("polymer", chainA, [cartoon, surface])
 
-    topo = molstar_helper.parse_molecule(os.path.join('tests', 'Villin.gro'), component=polymer, preset={'kind': 'empty'})
-    coords = molstar_helper.parse_coordinate(os.path.join('tests', 'Villin.trr'))
+    topo = parse_molecule(os.path.join('tests', 'Villin.gro'), component=polymer, preset={'kind': 'empty'})
+    coords = parse_coordinate(os.path.join('tests', 'Villin.trr'))
 
-    data = molstar_helper.get_trajectory(topo, coords)
+    data = get_trajectory(topo, coords)
     return data
 
 clientside_callback(
@@ -452,3 +454,6 @@ clientside_callback(
     prevent_initial_call=True
 )
 ```
+
+### Property `camera`
+

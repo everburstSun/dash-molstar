@@ -254,7 +254,7 @@ def create_ellipsoid(center=(0,0,0), dir_major=(1,0,0), dir_minor=(0,1,0), radiu
     `opacity` — float (optional)
         Transparency of the ellipsoid. The value is ranging from 0 to 1.0. (default: `1.0`)
     `detail` — int (optional)
-        Controls the subdivision surface of the ellipsoid. Higher values create smoother surfaces. (default: `2`)
+        Controls the subdivision surface of the ellipsoid. Higher values create smoother surfaces. (default: `6`)
 
     Returns
     -------

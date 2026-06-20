@@ -15,8 +15,8 @@ import os
 import dash_molstar
 import numpy as np
 from dash import Dash, Input, Output, ctx, html
+from dash_molstar.utils import Representation
 from dash_molstar.helpers import (
-	Representation,
 	create_component,
 	get_targets,
 	parse_molecule,

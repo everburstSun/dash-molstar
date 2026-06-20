@@ -3,10 +3,12 @@
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera
 ```
 
 # Helper Functions
@@ -15,7 +17,7 @@ Data provided to molstar viewer should be prepared by helper functions.
 ## Loading molecules
 
 ```{eval-rst}
-.. py:function:: parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'})
+.. py:function:: parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}, matrix=None)
    
    Parse the molecule for the `data` property of the dash-molstar.
 
@@ -39,6 +41,11 @@ Data provided to molstar viewer should be prepared by helper functions.
                   (default: ``{'kind': 'standard'}``)
    :type preset: dict, optional
 
+   :param matrix: The homogeneous transformation matrix for the molecule. 
+                  Only rigid transformations are allowed.
+                  (default: ``None``)
+   :type matrix: np.ndarray, optional
+
    :returns: The value for the ``data`` property.
    :rtype: dict
 
@@ -50,13 +57,13 @@ This function takes in the path to a file or the contents of a file-like object 
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_molecule
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.parse_molecule('3u7y.pdb')
+      data=parse_molecule('3u7y.pdb')
    )
 )
 ```
@@ -64,7 +71,7 @@ app.layout = html.Div(
 Each time the `data` property was updated with molecules, the canvas will be cleaned before loading any new structures.
 
 ```{eval-rst}
-.. function:: parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'})
+.. function:: parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard'}, matrix=None)
 
    Parse the URL for the `data` property of the molstar viewer. 
    The URL can be either a structure or a molstar state/session file. If a state/session is provided, the `mol` parameter should be set to `False`.
@@ -89,6 +96,11 @@ Each time the `data` property was updated with molecules, the canvas will be cle
                   (default: ``{'kind': 'standard'}``)
    :type preset: dict, optional
 
+   :param matrix: The homogeneous transformation matrix for the molecule. 
+                  Only rigid transformations are allowed.
+                  (default: ``None``)
+   :type matrix: np.ndarray, optional
+
    :returns: The value for the ``data`` property.
    :rtype: dict
 
@@ -97,13 +109,13 @@ Each time the `data` property was updated with molecules, the canvas will be cle
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_url
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.pdb')
+      data=parse_url('https://files.rcsb.org/download/3U7Y.pdb')
    )
 )
 ```
@@ -115,13 +127,13 @@ You can also load a molstar state or session file with this function. The input 
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_url
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.parse_url('https://molstar.org/demos/states/villin-md.molx')
+      data=parse_url('https://molstar.org/demos/states/villin-md.molx')
    )
 )
 ```
@@ -136,16 +148,16 @@ Other than `kind`, there are three other general keys but optional:
 
 - `assemblyId` (str): The assembly mode to show in the crystal
 - `modelIndex` (int): The first frame to show when you load a trajectory
-- `plddt` (str): plddt control option, can be 'off' | 'single-chain' | 'on'
+- `plddt` (str): plddt control option, can be `'off'` | `'single-chain'` | `'on'`
 
-An example for `assemblyId`: the main protease of SARS-COVID-2 (PDB ID 6LU7) was resolved as a homodimer, but if you load the protein with the default parameter, only the monomer will be displayed. To show the homodimer, you have to pass the assemblyId as well:
+An example for `assemblyId`: the main protease of SARS-COVID-2 (PDB ID 6LU7) was resolved as a homodimer, but if you load the protein with the default parameter, only the monomer will be displayed. To show the homodimer, you have to pass the `assemblyId` as well:
 
 ```py
-data = molstar_helper.parse_url(url='https://files.rcsb.org/download/6LU7.pdb', 
-                                preset={
-                                   'kind': 'standard',
-                                   'assemblyId': '1'
-                                })
+data = parse_url(url='https://files.rcsb.org/download/6LU7.pdb', 
+                 preset={
+                    'kind': 'standard',
+                    'assemblyId': '1'
+                 })
 ```
 
 Each type of `kind` may have some additional options relate to it:
@@ -153,7 +165,7 @@ Each type of `kind` may have some additional options relate to it:
 #### standard
 The default behaviour. There is no additional option for this kind beyond the general ones.
 
-It applies an 'auto' representation to the structure. If the structure has pLDDT information and is a single chain (or pLDDT is forced 'on'), it will use a pLDDT confidence coloring theme.
+It applies an `'auto'` representation to the structure. If the structure has pLDDT information and is a single chain (or pLDDT is forced 'on'), it will use a pLDDT confidence coloring theme.
 
 #### empty
 Disable any display. There is no additional option for this kind beyond the general ones.
@@ -166,7 +178,7 @@ This preset is used for superposing multiple structures or parts of structures. 
 - `colors` (List[{value: number, targets: List[Target]}]): A list defining how different parts of the aligned structures should be colored. Each entry specifies a color value and the targets that should receive this color.
 
 #### validation
-This preset applies the ValidationReportGeometryQualityPreset, which is typically used to visualize geometry validation reports (e.g., clashes, bond lengths, angles).
+This preset applies the `ValidationReportGeometryQualityPreset`, which is typically used to visualize geometry validation reports (e.g., clashes, bond lengths, angles).
 - `colorTheme` (str): Optional. Specifies a color theme to use for the validation report.
 - `showClashes` (bool): Optional. If true, explicitly shows clashes.
 
@@ -191,7 +203,7 @@ This combines the functionality of feature and density. It focuses on a specific
 - `wireframe` (bool): Optional. If true, displays the density map as a wireframe. Defaults to true if not specified.
 
 #### membrane
-This preset applies the MembraneOrientationPreset to visualize membrane planes. It resets the camera after applying the preset. If membrane calculation fails (e.g., for very small structures), it logs an error and falls back to the 'auto' representation.
+This preset applies the MembraneOrientationPreset to visualize membrane planes. It resets the camera after applying the preset. If membrane calculation fails (e.g., for very small structures), it logs an error and falls back to the `'auto'` representation.
 
 There is no additional option for this kind beyond the general ones.
 
@@ -203,7 +215,7 @@ It uses RcsbSuperpositionRepresentationPreset with selection expressions to high
 - `color` (number): Optional. A hex value of color to apply to the motif.
 
 #### nakb
-This preset applies an 'auto' representation but specifically uses a 'nakb' (Nucleic Acid Knowledge Base) coloring theme.
+This preset applies an `'auto'` representation but specifically uses a `'nakb'` (Nucleic Acid Knowledge Base) coloring theme.
 
 There is no additional option for this kind beyond the general ones. 
 
@@ -242,16 +254,16 @@ To load a trajectory, use the function `get_trajectory()` and supply the return 
 ```python
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import parse_molecule, parse_coordinate, get_trajectory
 
-topo = molstar_helper.parse_molecule('topo.pdb')
-coords = molstar_helper.parse_coordinate('coords.xtc')
+topo = parse_molecule('topo.pdb')
+coords = parse_coordinate('coords.xtc')
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.get_trajectory(topo, coords)
+      data=get_trajectory(topo, coords)
    )
 )
 ```
@@ -313,20 +325,20 @@ For a detailed introduction of the **Target** class, see the [](targets.md) sect
 :::
 
 ```py
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_targets
 
 # select all residues on chain H
-ChainL = molstar_helper.get_targets(chain="H")
+ChainL = get_targets(chain="H")
 
 # select some residues on chain L
-segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
+segment = get_targets(chain="L", residue=[24,25,26,27])
 
 # select residues 1-25 on chain L
-segment2 = molstar_helper.get_targets(chain="L", residue=list(range(1, 26)))
+segment2 = get_targets(chain="L", residue=list(range(1, 26)))
 
 # select atom index 192
 # you have to figure out which residue and chain it belongs to
-atom = molstar_helper.get_targets(chain="A", residue=25, atom=192)
+atom = get_targets(chain="A", residue=25, atom=192)
 ```
 
 When working with PDBx/mmCIF file formats, there will be two sets of naming and numbering system. One is a human-readable label or identifier for a chain names for residue numbers. The other is an authentic identifier that aligns with the experimental data and reflects the true identity of the chains and residues as determined through rigorous scientific procedures. Switching between the two systems by specifing `auth=True`.
@@ -359,23 +371,27 @@ When working with PDBx/mmCIF file formats, there will be two sets of naming and 
 This function generates the component information for the specified targets in molstar. The function takes in the name of the component, a dictionary or list of dictionaries containing the targets (whose value should be generated using the `get_targets()` function), and an optional class instance specifying the default representation for the component (defaulting to **cartoon**).
 
 ```py
-from dash_molstar.utils import molstar_helper
-from dash_molstar.utils.representations import Representation
+from dash_molstar.utils import Representation
+from dash_molstar.helpers import (
+   get_targets, 
+   create_component, 
+   parse_molecule
+)
 
 # first you need a target
-ChainL = molstar_helper.get_targets(chain="H")
+ChainL = get_targets(chain="H")
 
 # it is also fine if you have more than one target
-segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
+segment = get_targets(chain="L", residue=[24,25,26,27])
 
 # create a component to include target ChainL
-componentL = molstar_helper.create_component("Chain L", ChainL)
+componentL = create_component("Chain L", ChainL)
 
 # create an other component with more targets and another representation
-surface = molstar_helper.create_component("Surface", [ChainL, segment], Representation('molecular-surface'))
+surface = create_component("Surface", [ChainL, segment], Representation('molecular-surface'))
 
 # pass the components to function parse_molecule()
-data = molstar_helper.parse_molecule('3u7y.pdb', component=[componentL, surface])
+data = parse_molecule('3u7y.pdb', component=[componentL, surface])
 ```
 
 If an invalid representation is specified, a RuntimeError is raised.
@@ -411,18 +427,18 @@ This function selects the specified targets in molstar. The function takes in a 
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_targets, get_selection, parse_molecule
 
-segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
+segment = get_targets(chain="L", residue=[24,25,26,27])
 
 # select the target
-select = molstar_helper.get_selection(segment)
+select = get_selection(segment)
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.parse_molecule('3u7y.pdb'),
+      data=parse_molecule('3u7y.pdb'),
       select=select
    )
 )
@@ -453,21 +469,21 @@ It takes two parameters: `targets` and `analyse`. `targets` is a dictionary or l
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_targets, get_focus, parse_molecule
 
-segment = molstar_helper.get_targets(chain="L", residue=[24,25,26,27])
+segment = get_targets(chain="L", residue=[24,25,26,27])
 
 # center camera on the target
-focus = molstar_helper.get_focus(segment, analyse=False)
+focus = get_focus(segment, analyse=False)
 # center camera on the target
 # and show the interactions of the target with molecules around
-analyse = molstar_helper.get_focus(segment, analyse=True)
+analyse = get_focus(segment, analyse=True)
 
 app = Dash(__name__)
 app.layout = html.Div(
    dash_molstar.MolstarViewer(
       id='viewer', style={'width': '500px', 'height':'500px'},
-      data=molstar_helper.parse_molecule('3u7y.pdb'),
+      data=parse_molecule('3u7y.pdb'),
       focus=analyse
    )
 )
@@ -475,96 +491,7 @@ app.layout = html.Div(
 
 ## Shapes
 
-```{eval-rst}
-.. function:: get_box(min_xyz=(0,0,0), max_xyz=(1,1,1), radius=0.1, label="Bounding Box", color='red', opacity=1.0)
-
-   Generate a bounding box in the viewer with the given parameters.
-
-   :param min_xyz: Minimum of x, y, and z values. (default: ``(0,0,0)``)
-   :type min_xyz: tuple, optional
-
-   :param max_xyz: Maximum of x, y, and z values. (default: ``(1,1,1)``)
-   :type max_xyz: tuple, optional
-
-   :param radius: Edge radius in angstroms. (default: ``0.1``)
-   :type radius: float, optional
-
-   :param label: The label to be shown for the bounding box in the viewer. (default: ``"Bounding Box"``)
-   :type label: str, optional
-
-   :param color: Color of the box. Should be an X11 color name.
-                 Available options can be found at `here <https://www.w3.org/TR/css-color-3/#svg-color>`_. (default: ``'red'``)
-   :type color: str, optional
-
-   :param opacity: Transparency of the box, ranging from 0 to 1.0. (default: ``1.0``)
-   :type opacity: float, optional
-
-   :returns: A dictionary for the ``data`` property of MolstarViewer.
-   :rtype: dict
-
-   :raises ValueError: If the input coordinates are not 3-dimensional.
-
-``` 
-
-This function generates a Bounding Box in the Molstar viewer. Bounding boxes are used to enclose specific regions within the viewer's visualization. 
-
-Each box is identified by a label, allowing you to manage and update existing boxes. If you provide Molstar with a box that has a label that already exists, it will update the existing box with the new parameters, preventing the creation of duplicate boxes with the same label. 
-
-```{eval-rst}
-.. function:: get_sphere(center=(0,0,0), radius=1.0, label="Sphere", color='blue', opacity=1.0, detail=6)
-
-   Generate a sphere in the viewer with the given parameters.
-
-   :param center: The center of the sphere. (default: ``(0,0,0)``)
-   :type center: tuple, optional
-
-   :param radius: The radius of the sphere in angstroms. (default: ``1.0``)
-   :type radius: float, optional
-
-   :param label: The label to be shown for the sphere in the viewer. (default: ``"Sphere"``)
-   :type label: str, optional
-
-   :param color: The color of the sphere. Should be an X11 color name.
-                 Available options can be found at `here <https://www.w3.org/TR/css-color-3/#svg-color>`_. (default: ``'blue'``)
-   :type color: str, optional
-
-   :param opacity: Transparency of the sphere, ranging from 0 to 1.0. (default: ``1.0``)
-   :type opacity: float, optional
-
-   :param detail: Controls the subdivision surface of the sphere, which is made of polygons.
-                  The higher the value, the finer the sphere appears, but it also requires more time to render. 
-                  The recommended value is ``6``.
-   :type detail: int, optional
-
-   :returns: A dictionary for the ``data`` property of MolstarViewer.
-   :rtype: dict
-
-   :raises ValueError: If the input coordinates are not 3-dimensional.
-
-``` 
-
-This function generates a sphere in the Molstar viewer. Each sphere is also identified by a label, allowing you to manage and update existing spheres.
-
-```py
-import dash_molstar
-from dash import Dash, html
-from dash_molstar.utils import molstar_helper
-
-mol = molstar_helper.parse_molecule('3u7y.pdb')
-box = molstar_helper.get_box(min_xyz=(1,2,3), max_xyz=(4,5,6))
-sphere = molstar_helper.get_sphere(center=(7,8,9), opacity=0.3)
-
-data = [mol, box, sphere]
-
-app = Dash(__name__)
-app.layout = html.Div(
-   dash_molstar.MolstarViewer(
-      id='viewer', style={'width': '500px', 'height':'500px'},
-      data=data,
-
-   )
-)
-```
+For helper function for loading shapes into the viewer, please refer to [](shapes.md) for more details.
 
 ## Adding Measurements
 
@@ -597,29 +524,29 @@ The `get_measurement` function allows you to create and display various types of
 Parameters for the argument `targets` should be generated by the helper function `get_targets()`. For example, the following code snippet shows how to create measurements of distance, label and dihedral angle.
 
 ```py
-from dash_molstar.utils import molstar_helper
+from dash_molstar.helpers import get_targets, get_measurement
 
 # Select two residues for distance measurement
-residue1 = molstar_helper.get_targets(chain="A", residue=10)
-residue2 = molstar_helper.get_targets(chain="A", residue=20)
+residue1 = get_targets(chain="A", residue=10)
+residue2 = get_targets(chain="A", residue=20)
 
 # Create a distance measurement
-distance = molstar_helper.get_measurement([residue1, residue2], type='distance')
+distance = get_measurement([residue1, residue2], type='distance')
 
 # Add a label to residues
-label1 = molstar_helper.get_measurement(residue1, type='label')
-label2 = molstar_helper.get_measurement(residue2, type='label')
+label1 = get_measurement(residue1, type='label')
+label2 = get_measurement(residue2, type='label')
 
 # Add phi and psi angles (both require 4 targets)
 dihedral_atoms = [
-   molstar_helper.get_targets(chain="A", residue=24, atom=186),
-   molstar_helper.get_targets(chain="A", residue=25, atom=192),
-   molstar_helper.get_targets(chain="A", residue=25, atom=193),
-   molstar_helper.get_targets(chain="A", residue=25, atom=194),
-   molstar_helper.get_targets(chain="A", residue=26, atom=202),
+   get_targets(chain="A", residue=24, atom=186),
+   get_targets(chain="A", residue=25, atom=192),
+   get_targets(chain="A", residue=25, atom=193),
+   get_targets(chain="A", residue=25, atom=194),
+   get_targets(chain="A", residue=26, atom=202),
 ]
-phi = molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral'),
-psi = molstar_helper.get_measurement(dihedral_atoms[1:], 'dihedral')
+phi = get_measurement(dihedral_atoms[0:-1], 'dihedral'),
+psi = get_measurement(dihedral_atoms[1:], 'dihedral')
 ```
 
 The measurement instances can be served to the `measurement` property of dash-molstar. If you want to create more than one measurements at a time, return them as a list. 
@@ -627,7 +554,212 @@ The measurement instances can be served to the `measurement` property of dash-mo
 By default, the existing measurements in the molstar viewer will be cleared before adding new ones. If you wish to keep them, you can specify `add=True`.
 
 ```py
-phi = molstar_helper.get_measurement(dihedral_atoms[0:-1], 'dihedral', add=True)
+phi = get_measurement(dihedral_atoms[0:-1], 'dihedral', add=True)
 ```
 
 If you have provided multiple measurements as a list, the plugin will only check the `add` parameter of the first element in the list.
+
+## Camera
+
+For deteiled camera control, please refer to [](camera.md) for more details.
+
+## Screenshot
+
+The screenshot feature lets you programmatically capture the current view of the molstar viewer and download it as an image file. To trigger a screenshot from a callback, return the value of `get_screenshot()` to the `screenshot` property of the viewer.
+
+```{eval-rst}
+.. function:: get_screenshot(filename, params, crop=None)
+
+   Prepare a screenshot request for the molstar viewer.
+
+   :param filename: The name of the image file to be downloaded (without extension).
+   :type filename: str
+
+   :param params: The screenshot configuration. Should be a ``Screenshot`` instance.
+   :type params: Screenshot
+
+   :param crop: Override the cropping region. Ignored if not provided; the crop defined
+                in ``params`` will be used instead. See the ``crop`` parameter of
+                ``Screenshot`` for the expected format. (default: ``None``)
+   :type crop: dict, optional
+
+   :returns: The screenshot data to be returned from a Dash callback to the ``screenshot`` property.
+   :rtype: dict
+```
+
+To customize the screenshot, you will need to pass a `Screenshot` instance to the `params` argument of `get_screenshot()`. The `Screenshot` class has several parameters that allow you to control the resolution, background transparency, axes overlay, illumination settings, and cropping of the screenshot.
+
+```{eval-rst}
+.. class:: Screenshot(resolution=named_params('ultra-hd'), transparent=False, axes=named_params('off'), illumination=None, crop=None)
+
+   Configuration object for taking a screenshot.
+
+   :param resolution: The output image resolution.
+   :type resolution: dict
+
+   :param transparent: If ``True``, the background of the screenshot will be transparent.
+                       (default: ``False``)
+   :type transparent: bool, optional
+
+   :param axes: Whether to overlay coordinate axes on the screenshot.
+                (default: ``named_params('off')``)
+   :type axes: dict
+
+   :param illumination: Advanced illumination settings for the screenshot render.
+                        (default: ``None``)
+   :type illumination: dict, optional
+
+   :param crop: Crop the screenshot to a sub-region of the image. Autocrop is enabled by default.
+                (default: ``None``)
+   :type crop: dict, optional
+```
+
+:::{seealso}
+NamedParams is a molstar defined data type. See how to generate a correct NamedParams, in the [NamedParams](#NamedParams) section.
+:::
+
+The argument `resolution` and `axes` are expected to be in the form of a `NamedParams` object. Available options for them are listed below.
+
+The basic usage wires a button to a callback that returns a screenshot request:
+
+```py
+import dash_molstar
+from dash import Dash, html, Input, Output
+from dash_molstar.helpers import parse_molecule, get_screenshot
+from dash_molstar.utils import named_params, Screenshot
+
+app = Dash(__name__)
+app.layout = html.Div([
+    dash_molstar.MolstarViewer(
+        id='viewer', style={'width': '800px', 'height': '600px'},
+        data=parse_molecule('3u7y.pdb')
+    ),
+    html.Button("Download Screenshot", id='download-btn'),
+])
+
+@app.callback(
+    Output("viewer", "screenshot"),
+    Input("download-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def download_screenshot(n_clicks):
+    params = Screenshot()  # ultra-hd, opaque background, no axes overlay
+    return get_screenshot(filename='my_structure', params=params)
+```
+
+### Resolution
+
+Molstar allows you to choose from several preset resolutions or specify custom dimensions for the output image.
+
+- **resolution** (NamedParams) – resolution preset for the screenshot. Available options include:
+    - *viewport* (None as NamedParams) – Match the current viewer size.
+    - *hd* (None as NamedParams) – 1280 × 720.
+    - *full-hd* (None as NamedParams) – 1920 × 1080.
+    - *ultra-hd* (None as NamedParams) – 3840 × 2160.
+    - *custom* (dict as NamedParams) – User-defined.
+      - *width* (int) – Width of the output image in pixels.
+      - *height* (int) – Height of the output image in pixels.
+
+Some use cases for different resolution settings:
+
+```py
+from dash_molstar.utils import named_params
+
+# Ultra HD (3840x2160)
+params = Screenshot(resolution=named_params('ultra-hd'))
+
+# Custom dimensions
+params = Screenshot(resolution=named_params('custom', {'width': 4096, 'height': 4096}))
+
+# Match the current viewer canvas size
+params = Screenshot(resolution=named_params('viewport'))
+```
+
+### Transparent background
+
+Set `transparent=True` to export the image with a transparent background (PNG only):
+
+```py
+params = Screenshot(
+    resolution=named_params('ultra-hd'),
+    transparent=True,
+)
+```
+
+### Axes overlay
+
+Use `axes=named_params('on', params)` to include a coordinate axes indicator in the screenshot. If you would like to show axes on the screenshot, the `default_axes_params` dict provides sensible defaults for the axes appearance:
+
+```py
+from dash_molstar.helpers import Screenshot
+from dash_molstar.utils import named_params, default_axes_params
+
+# Show axes with default appearance
+params = Screenshot(
+    resolution=named_params('ultra-hd'),
+    axes=named_params('on', default_axes_params),
+)
+
+# Hide axes (default)
+params = Screenshot(
+    axes=named_params('off'),
+)
+```
+
+The `default_axes_params` dict and its keys:
+
+| Key | Default | Description |
+|---|---|---|
+| `alpha` | `0.51` | Opacity of the axes |
+| `colorX` | `0xFF0000` | Color of the X axis |
+| `colorY` | `0x00FF00` | Color of the Y axis |
+| `colorZ` | `0x0000FF` | Color of the Z axis |
+| `scale` | `0.33` | Overall size scale of the axes widget |
+| `location` | `'bottom-left'` | Position on screen |
+| `locationOffsetX` | `0` | Horizontal offset from the anchor |
+| `locationOffsetY` | `0` | Vertical offset from the anchor |
+| `originColor` | `0x808080` | Color of the origin sphere |
+| `radiusScale` | `0.075` | Radius of the axis cylinders |
+| `showPlanes` | `True` | Whether to show the XY/XZ/YZ planes |
+| `planeColorXY` | `0x808080` | Color of the XY plane |
+| `planeColorXZ` | `0x808080` | Color of the XZ plane |
+| `planeColorYZ` | `0x808080` | Color of the YZ plane |
+| `showLabels` | `False` | Whether to show axis labels |
+| `labelX` | `'X'` | Label text for X axis |
+| `labelY` | `'Y'` | Label text for Y axis |
+| `labelZ` | `'Z'` | Label text for Z axis |
+| `labelColorX` | `0x808080` | Label color for X axis |
+| `labelColorY` | `0x808080` | Label color for Y axis |
+| `labelColorZ` | `0x808080` | Label color for Z axis |
+| `labelOpacity` | `1` | Label opacity |
+| `labelScale` | `0.25` | Label size scale |
+
+### Cropping
+
+Use the `crop` parameter to capture only a sub-region of the image. All values are fractions (0.0–1.0) relative to the full image dimensions:
+
+```py
+# Capture the center quarter of the image
+params = Screenshot(
+    resolution=named_params('ultra-hd'),
+    crop={'x': 0.25, 'y': 0.25, 'width': 0.5, 'height': 0.5}
+)
+```
+
+### Saving and loading configurations
+
+A `Screenshot` instance can be serialized to JSON so you can reuse configurations:
+
+```py
+# Save configuration to a file
+params = Screenshot(
+    resolution=named_params('ultra-hd'),
+    transparent=True,
+    axes=named_params('off'),
+)
+params.save_config('my_screenshot_config')  # saves as my_screenshot_config.json
+
+# Load it back in another session
+params = Screenshot.from_config('my_screenshot_config.json')
+```
+

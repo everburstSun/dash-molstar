@@ -1,6 +1,6 @@
 from dash.dependencies import Input, Output
-from dash_molstar.helpers import parse_molecule, get_screenshot, Screenshot
-from dash_molstar.utils import named_params, default_axes_params
+from dash_molstar.helpers import parse_molecule, get_screenshot
+from dash_molstar.utils import named_params, default_axes_params, Screenshot
 import dash_molstar
 from dash import Dash, html
 
