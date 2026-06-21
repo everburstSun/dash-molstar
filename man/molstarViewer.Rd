@@ -10,14 +10,25 @@ The Molstar viewer component for dash
 }
 
 \usage{
-molstarViewer(id=NULL, className=NULL, data=NULL, focus=NULL, frame=NULL,
-hover=NULL, layout=NULL, measurement=NULL, selection=NULL,
+molstarViewer(id=NULL, camera=NULL, cameradebounce=NULL,
+cameraresponddrag=NULL, className=NULL, data=NULL,
+focus=NULL, frame=NULL, hover=NULL, layout=NULL,
+measurement=NULL, screenshot=NULL, selection=NULL,
 style=NULL, updatefocusonframechange=NULL,
 updateselectiononframechange=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
+
+\item{camera}{Logical | numeric | character | named list | unnamed list. The camera object in the molstar viewer.}
+
+\item{cameradebounce}{Numeric. Debounce time in milliseconds for camera change events.
+Set to 0 to disable debounce. Default is 100ms.}
+
+\item{cameraresponddrag}{Logical. Whether to respond to drag events of the camera.
+Set to false to disable camera parameter updates while dragging
+with mouse keys, or scrolling.}
 
 \item{className}{Character. The HTML property `class` for additional class names of the container of molstar viewer.}
 
@@ -35,6 +46,9 @@ The data can be generated with python method `parse_molecule`.}
 The layout is not allowed to be changed once the component has been initialized.}
 
 \item{measurement}{Logical | numeric | character | named list | unnamed list. The measurements in the molstar viewer.}
+
+\item{screenshot}{Named list. The screenshot object containing the options for taking 
+screenshot of the current view in molstar viewer.}
 
 \item{selection}{Named list. The structure region to be selected in the molstar viewer.}
 

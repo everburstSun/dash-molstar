@@ -1,5 +1,21 @@
 # dash-molstar Changelog
 
+## [1.4.0] - 2026-06-21
+### Changed
+- Changed the helper import statements, while keeped the backward compatibility
+
+### Added
+- Allows callbacks to control camera
+- Supported camera animation
+- Supported screenshot to be downloaded via callbacks
+- Supported loading customized volume files
+- Supported creating planes, axes, ellipsoids, ribbons, sheets, tubes
+- Supported creating cylinders and dashed-lines
+- Supported structure transformation on loading
+
+### Bug fixes
+- Fixed shape loading problem when the viewer has just been initialized
+
 ## [1.3.2] - 2025-10-21
 ### Bug fixes
 - Fixed the problem when creating more than 2 components, representations can't be added to the third and later component

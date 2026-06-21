@@ -3,10 +3,12 @@
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera
 ```
 
 # Load the plugin
@@ -106,14 +108,14 @@ The layout of viewer should not be changed via callbacks.
 :::
 
 :::{note}
-If `manualReset` is set to `False`, the camera will not be reset when load new structures into the viewer.
+If `manualReset` is set to `True`, the camera will not be reset when loading new structures into the viewer.
 :::
 
 ### Customize the canvas
 Besides the general controls listed above, you are allowed to customize the canvas (where the molecule were shown) settings. To specify the canvas options, put them in a dict as the value of the key `canvas3d` in `layout`.
 
 ```py
-from dash_molstar.utils.representations import Representation
+from dash_molstar.utils import Representation, named_params
 import dash_molstar
 
 canvas = {
@@ -121,7 +123,7 @@ canvas = {
         'mode': 'perspective'
     },
     'postprocessing': {
-        'shadow': Representation.np('on', {
+        'shadow': named_params('on', {
             'steps': 1,
             'maxDistance': 3,
             'tolerance': 1

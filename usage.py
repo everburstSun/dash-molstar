@@ -12,7 +12,18 @@ from dash_molstar.utils import molstar_helper
 from dash_molstar.utils.representations import Representation
 from dash_molstar.utils.target import Target
 
-app = Dash(__name__, assets_folder='bootstrap')
+app = Dash(__name__, 
+        external_scripts=[{
+            'src': 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js',
+            'integrity': 'sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm',
+            'crossorigin': 'anonymous'
+        }],
+        external_stylesheets=[{
+            'href': 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css',
+            'integrity': 'sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9',
+            'crossorigin': 'anonymous',
+            'rel': 'stylesheet'
+        }])
 df = pd.read_json(os.path.join("tests", "H_G_interaction.json"))
 
 enable_outline = {
@@ -326,7 +337,8 @@ def load_protein_with_shapes(yes):
                                          opacity=0.7) 
               for shape in shape_data ]
     box = molstar_helper.get_box(min_xyz=(-6.76, -7.916, 6.788), max_xyz=(3.559, 6.406, 20.594))
-    data = [mol, box]
+    dashedline = molstar_helper.get_cylinder(start=(-0.295, -4.113, 10.415), end=(1.559, -0.893, 17.501), radius=0.1, label="Sample dashed line", color='yellow', opacity=0.8, dashed=True)
+    data = [mol, box, dashedline]
     data.extend(shapes)
 
     return data

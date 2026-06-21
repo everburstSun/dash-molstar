@@ -27,6 +27,18 @@ Keyword arguments:
 - id (string; optional):
     The ID used to identify this component in Dash callbacks.
 
+- camera (boolean | number | string | dict | list; optional):
+    The camera object in the molstar viewer.
+
+- cameradebounce (number; optional):
+    Debounce time in milliseconds for camera change events. Set to 0
+    to disable debounce. Default is 100ms.
+
+- cameraresponddrag (boolean; optional):
+    Whether to respond to drag events of the camera. Set to False to
+    disable camera parameter updates while dragging with mouse keys,
+    or scrolling.
+
 - className (string; optional):
     The HTML property `class` for additional class names of the
     container of molstar viewer.
@@ -54,6 +66,10 @@ Keyword arguments:
 - measurement (boolean | number | string | dict | list; optional):
     The measurements in the molstar viewer.
 
+- screenshot (dict; optional):
+    The screenshot object containing the options for taking
+    screenshot of the current view in molstar viewer.
+
 - selection (dict; optional):
     The structure region to be selected in the molstar viewer.
 
@@ -80,13 +96,17 @@ Keyword arguments:
         focus: typing.Optional[dict] = None,
         frame: typing.Optional[NumberType] = None,
         measurement: typing.Optional[typing.Any] = None,
+        camera: typing.Optional[typing.Any] = None,
+        cameradebounce: typing.Optional[NumberType] = None,
+        cameraresponddrag: typing.Optional[bool] = None,
+        screenshot: typing.Optional[dict] = None,
         updatefocusonframechange: typing.Optional[bool] = None,
         updateselectiononframechange: typing.Optional[bool] = None,
         **kwargs
     ):
-        self._prop_names = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
+        self._prop_names = ['id', 'camera', 'cameradebounce', 'cameraresponddrag', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'screenshot', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self._valid_wildcard_attributes =            []
-        self.available_properties = ['id', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
+        self.available_properties = ['id', 'camera', 'cameradebounce', 'cameraresponddrag', 'className', 'data', 'focus', 'frame', 'hover', 'layout', 'measurement', 'screenshot', 'selection', 'style', 'updatefocusonframechange', 'updateselectiononframechange']
         self.available_wildcard_properties =            []
         _explicit_args = kwargs.pop('_explicit_args')
         _locals = locals()

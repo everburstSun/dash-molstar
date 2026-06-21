@@ -3,10 +3,12 @@
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera
 ```
 
 # Targets
@@ -34,8 +36,7 @@ The following example will print the selected targets every time the selections 
 ```py
 import dash_molstar
 from dash import Dash, html, Input
-from dash_molstar.utils.target import Target
-from dash_molstar.utils import molstar_helper
+from dash_molstar.utils import Target
 
 app = Dash(__name__)
 app.layout = html.Div(

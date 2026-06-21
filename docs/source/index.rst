@@ -30,7 +30,7 @@ Import ``dash_molstar`` and then you can add it to your layout as you did to oth
 
    import dash_molstar
    from dash import Dash, html
-   from dash_molstar.utils import molstar_helper
+   from dash_molstar.helpers import parse_molecule, parse_url
 
    app = Dash(__name__)
    app.layout = html.Div(
@@ -48,7 +48,7 @@ Or if you want the viewer have a default molecule loaded:
 .. code-block:: python
 
    dash_molstar.MolstarViewer(
-      data=molstar_helper.parse_molecule('3u7y.pdb'),
+      data=parse_molecule('3u7y.pdb'),
       id='viewer', style={'width': '500px', 'height':'500px'}
    )
 
@@ -60,7 +60,7 @@ You can add the following code to load a structure from a local file with callba
                   Input('load_protein', 'n_clicks'),
                   prevent_initial_call=True)
     def display_output(yes):
-        data = molstar_helper.parse_molecule('3u7y.pdb')
+        data = parse_molecule('3u7y.pdb')
         return data
 
 Or from a remote URL:
@@ -71,7 +71,7 @@ Or from a remote URL:
                   Input('load_protein', 'n_clicks'),
                   prevent_initial_call=True)
     def display_output(yes):
-        data = molstar_helper.parse_url('https://files.rcsb.org/download/3U7Y.cif')
+        data = parse_url('https://files.rcsb.org/download/3U7Y.cif')
         return data
 
 
@@ -81,7 +81,9 @@ Or from a remote URL:
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera

@@ -3,10 +3,12 @@
 
    load
    helper
+   shapes
    properties
    callbacks
    targets
    representations
+   camera
 ```
 
 # Representations
@@ -20,7 +22,7 @@ The `Representation` class is used to define the visual style of molecular struc
 In *dash-molstar*, users can import the class `Representation` to control all the settings for their representations:
 
 ```py
-from dash_molstar.utils.representations import Representation
+from dash_molstar.utils import Representation
 rep = Representation()
 ```
 
@@ -31,7 +33,7 @@ A representation has settings in three catogories: [type](#type), [color](#color
 You can specify the representation type on instance creation or change it later:
 
 ```py
-from dash_molstar.utils.representations import Representation
+from dash_molstar.utils import Representation
 
 rep = Representation()      # default cartoon representation
 rep.type = 'ball-and-stick' # change rep to ball-and-stick
@@ -43,7 +45,7 @@ surface = Representation('gaussian-surface')
 You can also change the `color` and `size` for the instance:
 
 ```py
-from dash_molstar.utils.representations import Representation
+from dash_molstar.utils import Representation
 
 rep = Representation(type='gaussian-surface', color='hydrophobicity')
 
@@ -66,8 +68,8 @@ For example, if you wish to create a look that the surface is wrapping the backb
 ```py
 import dash_molstar
 from dash import Dash, html
-from dash_molstar.utils import molstar_helper
-from dash_molstar.utils.representations import Representation
+from dash_molstar.helpers import get_targets, create_component
+from dash_molstar.utils import named_params, Representation
 
 # create and configure representations
 # here let's do cartoon and gaussian surface
@@ -77,17 +79,17 @@ surface.set_type_params({'alpha': 0.1, 'radiusOffset': 0.3})
 surface.set_color_params({'value': 0x009CE0})
 
 # select residues 42-76 in chain A
-chain_A = molstar_helper.get_targets(chain='A', residue=list(range(42,77)))
+chain_A = get_targets(chain='A', residue=list(range(42,77)))
 
 # create a component with the given representation on the target
-component = molstar_helper.create_component(label='Protein', targets=chain_A, 
-                                            representation=[cartoon, surface])
+component = create_component(label='Protein', targets=chain_A, 
+                             representation=[cartoon, surface])
 
 # load a cif file and disable the default representation
-data = molstar_helper.parse_url("https://files.rcsb.org/download/1UJS.cif", 
-                                component=component, preset={'kind':'empty'})
+data = parse_url("https://files.rcsb.org/download/1UJS.cif", 
+                 component=component, preset={'kind':'empty'})
 
-enableOutline = {'postprocessing': {'outline': Representation.np('on', {'scale': 1,'threshold': 0.33,'color': 0x000000,'includeTransparent': True})}}
+enableOutline = {'postprocessing': {'outline': named_params('on', {'scale': 1,'threshold': 0.33,'color': 0x000000,'includeTransparent': True})}}
 app = Dash(__name__)
 app.layout = html.Div(
     dash_molstar.MolstarViewer(
@@ -118,11 +120,11 @@ have no params, corresponding to `None`, but `on` has two options. Then we can s
 surface = Representation(type='gaussian-surface')
 
 # set smoothColors to off, params as None by default
-surface.set_type_params({'smoothColors': surface.np('off')})
+surface.set_type_params({'smoothColors': named_params('off')})
 
 # set smoothColors to on, with child option values
 surface.set_type_params({
-    'smoothColors': surface.np('on', {
+    'smoothColors': named_params('on', {
         'resolutionFactor': 2, 
         'sampleStride': 3
     })
