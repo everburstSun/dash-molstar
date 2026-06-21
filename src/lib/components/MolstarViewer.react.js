@@ -400,7 +400,7 @@ export default class MolstarViewer extends Component {
             if (data.type === "mol") { // loading a structure
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(data.preset);
-                const matrix = data.matrix ? Mat4.fromArray(Mat4.zero(), data.matrix, 0) : undefined;
+                const matrix = data.matrix ? Mat4.fromArray(Mat4.identity(), data.matrix, 0) : undefined;
                 const result = await this.viewer.loadStructureFromData(data.data, data.format, false, {props: data.preset, matrix: matrix});
                 // add the structure ID to this.loadedStructures
                 this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
@@ -414,7 +414,7 @@ export default class MolstarViewer extends Component {
                 if (data.urlfor === 'mol') { // loading a structure from URL
                     // handle the target key in preset
                     this.parseTargetsForMoleculePresets(data.preset);
-                    const matrix = data.matrix ? Mat4.fromArray(Mat4.zero(), data.matrix, 0) : undefined;
+                    const matrix = data.matrix ? Mat4.fromArray(Mat4.identity(), data.matrix, 0) : undefined;
                     const result = await this.viewer.loadStructureFromUrl(data.data, data.format, false, {props: data.preset, matrix: matrix});
                     // add the structure ID to this.loadedStructures
                     this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
@@ -430,7 +430,8 @@ export default class MolstarViewer extends Component {
                 const { topo, coords } = data;
                 // handle the target key in preset
                 this.parseTargetsForMoleculePresets(topo.preset);
-                const matrix = topo.matrix ? Mat4.fromArray(Mat4.zero(), topo.matrix, 0) : undefined;
+                const matrix = topo.matrix ? Mat4.fromArray(Mat4.identity(), topo.matrix, 0) : undefined;
+                // inside molstar viewer, the data source will be checked to load from url or from raw data
                 const result = await this.viewer.loadTrajectory(topo, coords, {props: topo.preset, matrix: matrix});
                 // add the structure ID to this.loadedStructures
                 this.loadedStructures[model_index] = result.structure.cell.obj.data.units[0].model.id;
@@ -439,6 +440,10 @@ export default class MolstarViewer extends Component {
                     this.bindingComponentToMolecule(topo, model_index);
                     await this.handleComponentChange(topo.component);
                 }
+            } else if (data.type === 'volume') {
+                this.viewer.loadVolumeFromUrl(
+                    {url: data.source.data, format: data.source.format, isBinary: data.isBinary},
+                     data.isovalues, {entryId: data.entryId, isLazy: data.isLazy});
             }
         }
     }
@@ -666,10 +671,10 @@ export default class MolstarViewer extends Component {
             measurement={this.state.measurement}
             camera={this.state.camera}
             cameradebounce={this.state.cameradebounce}
-            cameraresponddrag={this.state.cameraresponddrag}
+            cameraresponddrag={String(this.state.cameraresponddrag)}
             screenshot={this.state.screenshot}
-            updatefocusonframechange={this.state.updatefocusonframechange}
-            updateselectiononframechange={this.state.updateselectiononframechange}
+            updatefocusonframechange={String(this.state.updatefocusonframechange)}
+            updateselectiononframechange={String(this.state.updateselectiononframechange)}
             />
         );
     }

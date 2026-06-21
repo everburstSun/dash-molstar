@@ -13,6 +13,7 @@ supported_formats = {
     'mol': ["cif", "cifcore", "pdb", "pdbqt", "gro", "xyz", "mol", "sdf", "mol2", "lammps_data", "lammps_traj_data"],
     'snapshot': ["json", "molj", "molx", "zip"],
     'coords': ["dcd", "xtc", "trr", "nctraj", "lammpstrj"],
+    'volume': ["ccp4", "dsn6", "cube", "dx", "dscif", "segcif"]
 }
 
 def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}, matrix=None):
@@ -116,6 +117,8 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
         Supported formats for states and sessions include `json`, `molj`, `molx`, `zip`
 
         Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj`
+
+        Supported formats for volumes include `ccp4`, `dsn6`, `cube`, `dx`, `dscif`, `segcif`
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -250,6 +253,45 @@ def get_trajectory(topology, coordinate):
         'type': 'traj',
         'topo': topology,
         'coords': coordinate
+    }
+
+def get_volume(url_obj, isovalues, entryId, isBinary, isLazy=False):
+    """
+    Load a volume into molstar viewer with a URL. Volume file can only be loaded with URL due to its usually large file size. The format can be either specified or inferred from the file extension.
+
+    Parameters
+    ----------
+    `url_obj` — str
+        The URL object obtained to the volume file, obtained with helper function `parse_url()`.
+    `isovalues` — List[dict]
+        The isovalue(s) for visualizing the volume. Can be a list of single value or multiple isosurfaces.
+        The dictionary has to contain the following keys:
+        - `type`: str, either "relative" or "absolute", indicating whether the isovalue is relative to the mean of the volume or an absolute value.
+        - `value`: float, the value of the isovalue.
+        - `color`: int, the color of the isosurface in hexadecimal RGB format, e.g., 0xFF0000 for red.
+        - `alpha`: float (optional), the transparency of the isosurface, with a value between 0 and 1. (default: `1`)
+        - `volumeIndex`: int (optional), the index of the volume for this isosurface, starting from 1. If not specified, the isosurface will be generated for the first volume.
+    `entryId` — str | List[str]
+         The entryId(s) of the volume, which will be used for labeling the isosurfaces. Can be a single entryId or a list of entryIds for multiple isosurfaces.
+    `isBinary` — bool
+        Whether the volume file is in binary format.
+    `isLazy` — bool (optional)
+        Whether to load the volume lazily. (default: `False`)
+
+    Returns
+    -------
+    `dict`
+        The value for the `data` parameter of molstar viewer for loading a volume.
+    """
+    if type(isovalues) != list: isovalues = [isovalues]
+    if type(entryId) != list: entryId = [entryId]
+    return {
+        'type': 'volume',
+        'source': url_obj,
+        'isovalues': isovalues,
+        'entryId': entryId,
+        'isBinary': isBinary,
+        'isLazy': isLazy
     }
 
 def get_targets(chain, residue=None, atom=None, auth=False):
