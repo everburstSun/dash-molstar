@@ -16,6 +16,10 @@
 ### Bug fixes
 - Fixed shape loading problem when the viewer has just been initialized
 
+## [1.3.2] - 2025-10-21
+### Bug fixes
+- Fixed the problem when creating more than 2 components, representations can't be added to the third and later component
+
 ## [1.3.1] - 2025-09-15
 ### Bug fixes
 - Fixed abnormal behaviour when the molstar react component is removed from the web page
