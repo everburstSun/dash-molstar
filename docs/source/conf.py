@@ -9,7 +9,7 @@
 project = 'dash-molstar'
 copyright = '2026, Simon Sun'
 author = 'Simon Sun'
-release = '1.4.0'
+release = '1.4.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

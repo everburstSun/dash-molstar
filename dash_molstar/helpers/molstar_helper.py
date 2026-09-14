@@ -15,6 +15,8 @@ supported_formats = {
     'coords': ["dcd", "xtc", "trr", "nctraj", "lammpstrj"],
     'volume': ["ccp4", "dsn6", "cube", "dx", "dscif", "segcif"]
 }
+# other file extensions of the volume formats above
+volume_extensions = {'mrc': 'ccp4', 'map': 'ccp4', 'brix': 'dsn6', 'cub': 'cube', 'dxbin': 'dx'}
 
 def parse_molecule(inp, fmt=None, component=None, preset={'kind': 'standard'}, matrix=None):
     """
@@ -118,7 +120,9 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
 
         Supported formats for coordinates include `dcd`, `xtc`, `trr`, `nctraj`, `lammpstrj`
 
-        Supported formats for volumes include `ccp4`, `dsn6`, `cube`, `dx`, `dscif`, `segcif`
+        Supported formats for volumes include `ccp4`, `dsn6`, `cube`, `dx`, `dscif`, `segcif`.
+        The extensions `mrc` and `map` (ccp4), `brix` (dsn6), `cub` (cube) and `dxbin` (dx) are recognized,
+        and volume files can be gzipped. Volumes in CIF format need `fmt='dscif'` or `fmt='segcif'`.
     `component` — dict | List[dict] (optional)
         Component to be created in molstar. 
         If not specified, molstar will use its default settings. (default: `None`)
@@ -138,18 +142,26 @@ def parse_url(url, fmt=None, component=None, mol=True, preset={'kind': 'standard
     """
     # try to automatically infer file format
     parsed_url = urlparse(url)
+    gzipped = False
     if not fmt:
         name, fmt = os.path.splitext(parsed_url.path)
+        # gzipped volumes (e.g. emd_1234.map.gz) are decompressed by molstar
+        if fmt.lower() == '.gz':
+            gzipped = True
+            name, fmt = os.path.splitext(name)
     if not fmt:
         raise RuntimeError("The format must be specified if you are not providing static resources.")
     # check whether the format is in supported list and specify the url type
     fmt = fmt.strip('.').lower()
+    fmt = volume_extensions.get(fmt, fmt)
     for type, formats in supported_formats.items():
         if fmt in formats:
             urlfor = type
             break
     else:
         raise RuntimeError(f"The input file format \"{fmt}\" is not supported by molstar.")
+    if gzipped and urlfor != 'volume':
+        raise RuntimeError("Only volume files can be loaded gzipped.")
     if fmt == 'cif': fmt = 'mmcif'
     if fmt == 'cifcore': fmt = 'cifCore'
     # processing preset
@@ -255,36 +267,53 @@ def get_trajectory(topology, coordinate):
         'coords': coordinate
     }
 
-def get_volume(url_obj, isovalues, entryId, isBinary, isLazy=False):
+def get_volume(url_obj, isovalues=None, entryId=None, isBinary=None, isLazy=False):
     """
-    Load a volume into molstar viewer with a URL. Volume file can only be loaded with URL due to its usually large file size. The format can be either specified or inferred from the file extension.
+    Load a volume into molstar viewer with a URL. 
+    Volume file can only be loaded with URL due to its usually large file size. 
+    The format can be either specified or inferred from the file extension.
 
     Parameters
     ----------
-    `url_obj` — str
-        The URL object obtained to the volume file, obtained with helper function `parse_url()`.
-    `isovalues` — List[dict]
-        The isovalue(s) for visualizing the volume. Can be a list of single value or multiple isosurfaces.
+    `url_obj` — dict | str
+        The URL object to the volume file, obtained with helper function `parse_url()`.
+        A plain URL is parsed with `parse_url()`.
+    `isovalues` — dict | List[dict] (optional)
+        The isovalue(s) for visualizing the volume. Can be a single isosurface or a list of multiple isosurfaces.
+        If not specified, molstar's default visuals for the format are used, the same as opening the file in molstar.
+        Ignored for `segcif`, which is always shown as segments. (default: `None`)
         The dictionary has to contain the following keys:
-        - `type`: str, either "relative" or "absolute", indicating whether the isovalue is relative to the mean of the volume or an absolute value.
+        - `type`: str, either "relative" or "absolute". Relative values are in units of the volume's standard deviation (sigma) from its mean.
         - `value`: float, the value of the isovalue.
         - `color`: int, the color of the isosurface in hexadecimal RGB format, e.g., 0xFF0000 for red.
         - `alpha`: float (optional), the transparency of the isosurface, with a value between 0 and 1. (default: `1`)
-        - `volumeIndex`: int (optional), the index of the volume for this isosurface, starting from 1. If not specified, the isosurface will be generated for the first volume.
-    `entryId` — str | List[str]
-         The entryId(s) of the volume, which will be used for labeling the isosurfaces. Can be a single entryId or a list of entryIds for multiple isosurfaces.
-    `isBinary` — bool
-        Whether the volume file is in binary format.
+        - `volumeIndex`: int (optional), the index of the volume for this isosurface, starting from 0. (default: `0`)
+    `entryId` — str | List[str] (optional)
+        The entryId(s) used for labeling the volume(s). Provide a list when a `dscif` source contains multiple volumes. (default: `None`)
+    `isBinary` — bool (optional)
+        Whether the volume file is in binary format. Molstar infers it from the format and the file extension, so it is only
+        needed for `dx`, `dscif` and `segcif` URLs without an extension, which default to text, binary and binary respectively. (default: `None`)
     `isLazy` — bool (optional)
-        Whether to load the volume lazily. (default: `False`)
+        Whether to load the volume lazily. Requires `isovalues`. (default: `False`)
 
     Returns
     -------
     `dict`
         The value for the `data` parameter of molstar viewer for loading a volume.
+
+    Raises
+    ------
+    `RuntimeError`
+        If `url_obj` is not a volume format, or lazy loading is requested without isovalues.
     """
+    if isinstance(url_obj, str): url_obj = parse_url(url_obj)
+    if url_obj.get('urlfor') != 'volume':
+        raise RuntimeError(f"The format \"{url_obj.get('format')}\" is not a volume format. For volumes in CIF format, pass fmt='dscif' or fmt='segcif' to parse_url().")
+    if isovalues is None: isovalues = []
     if type(isovalues) != list: isovalues = [isovalues]
-    if type(entryId) != list: entryId = [entryId]
+    if isLazy and not isovalues:
+        raise RuntimeError("Lazy loading requires isovalues.")
+    if entryId is not None and type(entryId) != list: entryId = [entryId]
     return {
         'type': 'volume',
         'source': url_obj,

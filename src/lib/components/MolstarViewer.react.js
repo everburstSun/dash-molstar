@@ -441,9 +441,13 @@ export default class MolstarViewer extends Component {
                     await this.handleComponentChange(topo.component);
                 }
             } else if (data.type === 'volume') {
-                this.viewer.loadVolumeFromUrl(
-                    {url: data.source.data, format: data.source.format, isBinary: data.isBinary},
-                     data.isovalues, {entryId: data.entryId, isLazy: data.isLazy});
+                try {
+                    await this.viewer.loadVolumeFromUrl(
+                        {url: data.source.data, format: data.source.format, isBinary: data.isBinary},
+                        data.isovalues, {entryId: data.entryId, isLazy: data.isLazy});
+                } catch (e) {
+                    console.error(`Failed to load volume from ${data.source.data}:`, e);
+                }
             }
         }
     }

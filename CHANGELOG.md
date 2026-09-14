@@ -1,5 +1,10 @@
 # dash-molstar Changelog
 
+## [1.4.1] - 2026-09-14
+### Bug fixes
+- Fixed potential malfunction when loading some volume formats
+
+
 ## [1.4.0] - 2026-06-21
 ### Changed
 - Changed the helper import statements, while keeped the backward compatibility
