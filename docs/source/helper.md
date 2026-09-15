@@ -295,12 +295,23 @@ app.layout = html.Div(
 
 ## Loading volumes
 
-Dash-molstar can load volumetric data, such as electron density maps, into the viewer as isosurfaces. Because volume files are usually large, they can only be loaded from a URL. The volume source is prepared with `parse_url()` (which infers the format from the file extension, or you can pass it explicitly with `fmt`), and then wrapped with the `get_volume()` helper.
+Dash-molstar can load volumetric data, such as electron density maps, into the viewer. Because volume files are usually large, they can only be loaded from a URL. The volume source is prepared with `parse_url()` (which infers the format from the file extension, or you can pass it explicitly with `fmt`), and then wrapped with the `get_volume()` helper.
 
-Supported volume formats are `ccp4`, `dsn6`, `cube`, `dx`, `dscif`, and `segcif`.
+Supported volume formats are:
+
+| Format | File extensions |
+| --- | --- |
+| `ccp4` | `.ccp4`, `.mrc`, `.map` |
+| `dsn6` | `.dsn6`, `.brix` |
+| `cube` | `.cube`, `.cub` |
+| `dx` | `.dx`, `.dxbin` |
+| `dscif` | DensityServer CIF, e.g. responses of the RCSB and EMDB volume servers |
+| `segcif` | Segmentation CIF |
+
+Volume files can also be gzipped, e.g. `emd_1234.map.gz`. CIF volumes share the `.cif` and `.bcif` extensions with structures, so pass `fmt='dscif'` or `fmt='segcif'` to `parse_url()` for them.
 
 ```{eval-rst}
-.. function:: get_volume(url_obj, isovalues, entryId, isBinary, isLazy=True)
+.. function:: get_volume(url_obj, isovalues=None, entryId=None, isBinary=None, isLazy=False)
 
    Load a volume into the molstar viewer from a URL.
 
@@ -310,19 +321,22 @@ Supported volume formats are `ccp4`, `dsn6`, `cube`, `dx`, `dscif`, and `segcif`
 
    :param isovalues: The isosurface(s) to render from the volume. Either a single dict
                      or a list of dicts. Each dict describes one isosurface (see below).
-   :type isovalues: List[dict]
+                     If not given, molstar's default visuals for the format are used, the same
+                     as opening the file in molstar. Ignored for ``segcif``, which is always shown as segments.
+   :type isovalues: dict | List[dict], optional
 
    :param entryId: The entry ID(s) used to label the volume(s). Provide a single string for a
                    single map, or a list of strings when the source contains multiple maps
                    (e.g. ``['2FO-FC', 'FO-FC']`` for an X-ray density server response).
-   :type entryId: List[str]
+   :type entryId: str | List[str], optional
 
-   :param isBinary: Whether the volume file is in binary format (e.g. ``ccp4`` and binary
-                    ``dscif`` are binary).
-   :type isBinary: bool
+   :param isBinary: Whether the volume file is in binary format. Molstar infers it from the format
+                    and the file extension, so it is only needed for ``dx``, ``dscif`` and ``segcif``
+                    URLs without an extension, which default to text, binary and binary respectively.
+   :type isBinary: bool, optional
 
    :param isLazy: Whether to load the volume lazily, i.e. only fetch and render it when
-                  first needed. (default: ``False``)
+                  first needed. Requires ``isovalues``. (default: ``False``)
    :type isLazy: bool, optional
 
    :returns: The value for the ``data`` property.
@@ -355,7 +369,6 @@ volume = get_volume(
    source,
    isovalues={'type': 'relative', 'value': 2.9864, 'color': 0xFFFFFF, 'alpha': 0.6},
    entryId='EMD-2984',
-   isBinary=True,
 )
 
 app = Dash(__name__)
@@ -365,6 +378,14 @@ app.layout = html.Div(
       data=[mol, volume]
    )
 )
+```
+
+### Using the default visuals
+
+Without `isovalues`, the volume is displayed the same way as when opening the file in molstar. For example, a gzipped map placed in the `assets` folder of your Dash app:
+
+```py
+volume = get_volume(parse_url('/assets/emd_1234.map.gz'))
 ```
 
 ### Loading multiple maps
@@ -383,7 +404,7 @@ isovalues = [
    {'type': 'relative', 'value': 3,  'color': 0x33BB33, 'volumeIndex': 1, 'alpha': 0.3},   # Fo-Fc (+)
    {'type': 'relative', 'value': -3, 'color': 0xBB3333, 'volumeIndex': 1, 'alpha': 0.3},   # Fo-Fc (-)
 ]
-volume = get_volume(source, isovalues=isovalues, entryId=['2FO-FC', 'FO-FC'], isBinary=True, isLazy=False)
+volume = get_volume(source, isovalues=isovalues, entryId=['2FO-FC', 'FO-FC'])
 ```
 
 You can load a volume alongside a structure by returning both as a list to the `data` property:
